@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='np_utils',
-    version='0.1.1',
+    version='0.1.2',
     author='David N. Mashburn',
     author_email='david.n.mashburn@gmail.com',
     packages=['np_utils'],
@@ -11,5 +11,8 @@ setup(
     license='LICENSE.txt',
     description='',
     long_description=open('README.rst').read(),
-    install_requires=[],
+    install_requires=[
+                      'numpy>=1.0',
+                      'scipy>=0.8',
+                     ],
 )
