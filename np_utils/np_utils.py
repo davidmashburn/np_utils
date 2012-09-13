@@ -10,12 +10,17 @@ import numpy as np
 import scipy.sparse
 from copy import copy
 
+one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
+
 def flatten(l):
     '''A wrapper around the generator-based list flattener (quite fast)'''
     return [j for i in l for j in i]
 def zipflat(*args):
     '''Like zip, but flattens the result'''
     return [j for i in zip(*args) for j in i]
+def limitInteriorPoints(l,numInteriorPoints):
+    '''return the list l with only the endpoints and a few interior points (WILL DUPLICATE IF TOO FEW POINTS)'''
+    return [  l[i] for i in  np.linspace(0,len(l)-1,numInteriorPoints+2).round().astype(np.integer)  ]
 def shape_multiply(arr,shapeMultiplier, oddOnly=False, adjustFunction=None):
     '''Works like tile except that it keeps all like elements clumped\n'''
     '''Essentially a non-interpolating multi-dimensional image up-scaler'''
