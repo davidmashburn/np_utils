@@ -1,1 +1,2 @@
 v0.1, Aug 14, 2012 -- Initial release.
+v0.1.3 Sept 18, 2012 -- Added "one" (a 0d numpy array) and four new functions totuple, makeTuple,removeDuplicates,limitInteriorPoints

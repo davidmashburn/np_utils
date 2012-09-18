@@ -26,9 +26,14 @@ def totuple(a):
     except TypeError: # dig until we can dig no more!
         return a
 def makeTuple(a):
-    '''Like totuple, but ensures that you get a tuple out'''
+    '''Like totuple, but ensures that you get a tuple out.'''
     retVal = totuple(a)
     return ( retVal if retVal.__class__==tuple else (retVal,) )
+def removeDuplicates(l):
+    '''Order preserving duplicate removal... automatically converts lists and arrays (which are unhashable) to nested tuples.
+       Modified version of code found here: http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order'''
+    seen = set()
+    return [ x for x in totuple(l) if x not in seen and not seen.add(x)]
 def limitInteriorPoints(l,numInteriorPoints,uniqueOnly=True):
     '''return the list l with only the endpoints and a few interior points (WILL DUPLICATE IF TOO FEW POINTS)'''
     inds = np.linspace(0,len(l)-1,numInteriorPoints+2).round().astype(np.integer)
