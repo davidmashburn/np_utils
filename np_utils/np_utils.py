@@ -18,6 +18,17 @@ def flatten(l):
 def zipflat(*args):
     '''Like zip, but flattens the result'''
     return [j for i in zip(*args) for j in i]
+def totuple(a):
+    '''Makes tuples out of nested datastructures like lists and arrays.
+       Authored by Bi Rico, http://stackoverflow.com/questions/10016352/convert-numpy-array-to-tuple'''
+    try:
+        return tuple(totuple(i) for i in a)
+    except TypeError: # dig until we can dig no more!
+        return a
+def makeTuple(a):
+    '''Like totuple, but ensures that you get a tuple out'''
+    retVal = totuple(a)
+    return ( retVal if retVal.__class__==tuple else (retVal,) )
 def limitInteriorPoints(l,numInteriorPoints,uniqueOnly=True):
     '''return the list l with only the endpoints and a few interior points (WILL DUPLICATE IF TOO FEW POINTS)'''
     inds = np.linspace(0,len(l)-1,numInteriorPoints+2).round().astype(np.integer)
