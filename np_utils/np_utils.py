@@ -16,13 +16,11 @@ def flatten(l,repetitions=1):
     '''A wrapper around the generator-based list flattener (quite fast)'''
     retVal = l
     for i in range(repetitions):
-        try:
-            retVal = [j for i in retVal for j in i]
-        except TypeError:
-            pass
+        gen = ( ( k if hasattr(k,'__iter__') else [k] ) for k in retVal ) # Makes the function able to deal with jagged arrays as well
+        retVal = [j for i in gen for j in i]
     return retVal
-# Use like: flatten(l,3)
-# Another (nominally faster) version of this is: [ l for i in someNestedlist for j in i for k in j for l in k ]
+# Use like: flatten(aList,3)
+# Another (nominally faster) version of this is: [ l for i in aList for j in i for k in j for l in k ]
 def zipflat(*args):
     '''Like zip, but flattens the result'''
     return [j for i in zip(*args) for j in i]
