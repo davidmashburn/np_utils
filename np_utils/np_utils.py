@@ -12,9 +12,17 @@ from copy import copy
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
 
-def flatten(l):
+def flatten(l,repetitions=1):
     '''A wrapper around the generator-based list flattener (quite fast)'''
-    return [j for i in l for j in i]
+    retVal = l
+    for i in range(repetitions):
+        try:
+            retVal = [j for i in retVal for j in i]
+        except TypeError:
+            pass
+    return retVal
+# Use like: flatten(l,3)
+# Another (nominally faster) version of this is: [ l for i in someNestedlist for j in i for k in j for l in k ]
 def zipflat(*args):
     '''Like zip, but flattens the result'''
     return [j for i in zip(*args) for j in i]
@@ -35,7 +43,7 @@ def removeDuplicates(l):
     seen = set()
     return [ x for x in totuple(l) if x not in seen and not seen.add(x)]
 def limitInteriorPoints(l,numInteriorPoints,uniqueOnly=True):
-    '''return the list l with only the endpoints and a few interior points (WILL DUPLICATE IF TOO FEW POINTS)'''
+    '''return the list l with only the endpoints and a few interior points (uniqueOnly will duplicate if too few points)'''
     inds = np.linspace(0,len(l)-1,numInteriorPoints+2).round().astype(np.integer)
     if uniqueOnly:
         inds = np.unique(inds)
