@@ -12,6 +12,12 @@ from copy import copy
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
 
+def intOrFloat(string):
+    try:
+        return int(string)
+    except ValueError:
+        return float(string)
+
 def flatten(l,repetitions=1):
     '''A wrapper around the generator-based list flattener (quite fast)'''
     retVal = l
@@ -46,6 +52,17 @@ def limitInteriorPoints(l,numInteriorPoints,uniqueOnly=True):
     if uniqueOnly:
         inds = np.unique(inds)
     return [ l[i] for i in inds ]
+def partition(l,n,clip=True):
+    '''Partition list "l" into "n"-sized chunks
+       clip chops off whatever does not fit into n-sized chunks at the end'''
+    length = ( len(l)//n*n if clip else len(l) )
+    return [l[i:i+n] for i in range(0,length,n)]
+def partitionNumpy(l,n):
+    '''Like partition, but always clips and returns array, not list'''
+    a=np.array(l)
+    a.resize(len(l)//n,n)
+    return a
+
 def shape_multiply(arr,shapeMultiplier, oddOnly=False, adjustFunction=None):
     '''Works like tile except that it keeps all like elements clumped\n'''
     '''Essentially a non-interpolating multi-dimensional image up-scaler'''
