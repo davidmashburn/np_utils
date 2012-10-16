@@ -12,7 +12,61 @@ from copy import copy
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
 
+def totuple(a):
+    '''Makes tuples out of nested datastructures like lists and arrays.
+       Authored by Bi Rico, http://stackoverflow.com/questions/10016352/convert-numpy-array-to-tuple'''
+    try:
+        return tuple(totuple(i) for i in a)
+    except TypeError: # dig until we can dig no more!
+        return a
+def makeTuple(a):
+    '''Like totuple, but ensures that you get a tuple out.'''
+    retVal = totuple(a)
+    return ( retVal if retVal.__class__==tuple else (retVal,) )
+
+class fancyIndexingList(list):
+    '''fancyIndexingList is overloaded as "fl"
+       Gives lists the magical properties of numpy arrays, but without requiring regular shapes...
+       Also use it where you would convert a list to a numpy array and back again like: np.array(l)[:,3].tolist()
+       Use like: fl(ANY_LIST)[<any valid numpy slice>]
+       Examples:
+         fl( [[1],[2,3],[4,5,6],[7,8,9,10]] )[:,0]  ->  [1, 2, 4, 7]
+         fl( [[1],[2,3],[4,5,6],[7,8,9,10]] )[2:4,0]  ->  [4, 7]
+         fl( [1,[2,3],[[4,5],[6,7]]] )[2,0,1]  ->  5
+       fl also has the extra feature of being able to use lists-within-lists when indexing
+       Examples:
+         fl( [[1,7],[2,3],[4,5,6],[7,8,9,10]] )[:,(0,1)]  ->  [[1, 7], [2, 3], [4, 5], [7, 8]]
+         fl( [[1,7],[2,3],[4,5,6],[7,8,9,10]] )[(0,2),(0,1)]  ->  [[1, 7], [4, 5]]
+       Beware that you will need to nest lists or tuples if you only have a single index:
+         fl([1,2,3,4,5])[(1,2)] -> TypeError -- this is equivalent to fl([1,2,3,4,5])[1,2]
+         fl([1,2,3,4,5])[[1,2]] -> TypeError -- ""
+         fl([1,2,3,4,5])[(1,2),] -> [2,3]
+         fl([1,2,3,4,5])[[1,2],] -> [2,3]
+         fl([1,2,3,4,5])[((1,2),)] -> [2,3]
+         fl([1,2,3,4,5])[([1,2],)] -> [2,3]
+         fl([1,2,3,4,5])[[[1,2]]] -> [2,3]
+       '''
+    def __getitem__(self,index):
+        if not hasattr(index,'__iter__'):
+            index=(index,) # make sure index is always a tuple
+        if not index.__class__==tuple:
+            index = tuple(index) # make sure index is always a tuple
+        
+        if len(index)==1:
+            if hasattr(index[0],'__iter__'):
+                return [ self[i] for i in index[0] ] # if the single index is tuple of tuples, 
+            else:
+                return list.__getitem__(self,index[0]) # for a single index, use list's default indexing
+        elif type(index[0])==slice:
+            return [ fancyIndexingList(i)[index[1:]] for i in self[index[0]] ] # recurse
+        elif hasattr(index[0],'__iter__'):
+            return [ fancyIndexingList(self[i])[index[1:]] for i in index[0] ] # recurse
+        else:
+            return fancyIndexingList(self[index[0]])[index[1:]] # recurse
+fl = fancyIndexingList
+
 def intOrFloat(string):
+    '''Not sure if your string is formatted as an int or a float? Use intOrFloat instead!'''
     try:
         return int(string)
     except ValueError:
@@ -26,21 +80,13 @@ def flatten(l,repetitions=1):
         retVal = [j for i in gen for j in i]
     return retVal
 # Use like: flatten(aList,3)
+
 # Another (nominally faster) version of this is: [ l for i in aList for j in i for k in j for l in k ]
+# but it's unable to deal with jagged arrays...
+
 def zipflat(*args):
     '''Like zip, but flattens the result'''
     return [j for i in zip(*args) for j in i]
-def totuple(a):
-    '''Makes tuples out of nested datastructures like lists and arrays.
-       Authored by Bi Rico, http://stackoverflow.com/questions/10016352/convert-numpy-array-to-tuple'''
-    try:
-        return tuple(totuple(i) for i in a)
-    except TypeError: # dig until we can dig no more!
-        return a
-def makeTuple(a):
-    '''Like totuple, but ensures that you get a tuple out.'''
-    retVal = totuple(a)
-    return ( retVal if retVal.__class__==tuple else (retVal,) )
 def removeDuplicates(l):
     '''Order preserving duplicate removal... automatically converts lists and arrays (which are unhashable) to nested tuples.
        Modified version of code found here: http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order'''
@@ -292,5 +338,7 @@ def blitSphereToArray(arr,x,y,z,r,val):
     arr[xL:xH,yL:yH,zL:zH] *= (1-c)
     arr[xL:xH,yL:yH,zL:zH] += (val*c)
 
+# Create the first 100 circles and the first 20 spheres so we don't have to recalculate them if they are small!
+# Relatively negligible amount of memory (364450 total points, about 3MB on a 64-bit computer)
 circs = [ImageCircle(i) for i in range(1,100)]
 shprs = [ImageSphere(i) for i in range(1,20)]
