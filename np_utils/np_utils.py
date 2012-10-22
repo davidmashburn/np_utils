@@ -23,9 +23,18 @@ def makeTuple(a):
     '''Like totuple, but ensures that you get a tuple out.'''
     retVal = totuple(a)
     return ( retVal if retVal.__class__==tuple else (retVal,) )
+def iterToX(f,iter):
+    '''Replace all iterables in a nested structure (list,tuple,etc...)
+       with another type "f" (actually just any function returning iterables)
+       Like totuple, but more general, also uses list comprehensions
+       instead of generators for more generality (notably sympy.Tuple)'''
+    try:
+        return f(*[iterToX(f,i) for i in iter])
+    except TypeError: # dig until we can dig no more!
+        return iter
 
 class fancyIndexingList(list):
-    '''fancyIndexingList is overloaded as "fl"
+    '''fancyIndexingList is overloaded as "fL"
        Gives lists the magical properties of numpy arrays, but without requiring regular shapes...
        Also use it where you would convert a list to a numpy array and back again like: np.array(l)[:,3].tolist()
        Use like: fl(ANY_LIST)[<any valid numpy slice>]
@@ -46,6 +55,12 @@ class fancyIndexingList(list):
          fl([1,2,3,4,5])[([1,2],)] -> [2,3]
          fl([1,2,3,4,5])[[[1,2]]] -> [2,3]
        '''
+    def new_fL(self,*args,**kwds):
+        '''Just a wrapper around the class constructor for a new instance, fancyIndexingList()'''
+        return fancyIndexingList(*args,**kwds)
+    def _list_getitem(self,index):
+        '''Just a wrapper around list.__getitem__()'''
+        return list.__getitem__(self,index) # for a single index, use list's default indexing
     def __getitem__(self,index):
         if not hasattr(index,'__iter__'):
             index=(index,) # make sure index is always a tuple
@@ -56,14 +71,44 @@ class fancyIndexingList(list):
             if hasattr(index[0],'__iter__'):
                 return [ self[i] for i in index[0] ] # if the single index is tuple of tuples, 
             else:
-                return list.__getitem__(self,index[0]) # for a single index, use list's default indexing
+                return self._list_getitem(index[0]) # for a single index, use list's default indexing
         elif type(index[0])==slice:
-            return [ fancyIndexingList(i)[index[1:]] for i in self[index[0]] ] # recurse
+            return [ self.new_fL(i)[index[1:]] for i in self[index[0]] ] # recurse
         elif hasattr(index[0],'__iter__'):
-            return [ fancyIndexingList(self[i])[index[1:]] for i in index[0] ] # recurse
+            return [ self.new_fL(self[i])[index[1:]] for i in index[0] ] # recurse
         else:
-            return fancyIndexingList(self[index[0]])[index[1:]] # recurse
-fl = fancyIndexingList
+            return self.new_fL(self[index[0]])[index[1:]] # recurse
+    def __getslice__(self,i,j):
+        return self.__getitem__(slice(i,j))
+fL = fancyIndexingList
+
+class fancyIndexingListM1(fancyIndexingList):
+    '''fancyIndexingListM1 is overloaded as "fLm1"
+       Just like fancyIndexingList, but changes indices to be 1-indexed: fLm1(i)[1] -> i[0]
+       VERY useful if dealing with code from Octave, Matlab, Mathematica, etc... 
+       Documentation for fancyIndexingList:\n\n'''+fancyIndexingList.__doc__
+    def m1(self,x): # These don't really need to be in the class, but it's cleaner that way...
+        '''minus 1 if x>0'''
+        return (None if x==None else (x-1 if x>0 else x))
+
+    def m1gen(self,x):
+        '''m1, but able to handle iterables (lists, tuples, ...) and slices as well'''
+        if hasattr(x,'__iter__'):
+            return map(self.m1gen,x)
+        elif type(x)==slice:
+            return slice(self.m1(x.start),self.m1(x.stop),x.step)
+        elif type(x)==int:
+            return self.m1(x)
+        else:
+            print "Not sure what you're feeding me... signed, fancyIndexingListM1.m1gen"
+            return self.m1(x)
+    def new_fL(self,*args,**kwds):
+        '''Just a wrapper around the class constructor for a new instance, fancyIndexingListM1()'''
+        return fancyIndexingListM1(*args,**kwds)
+    def _list_getitem(self,index):
+        '''Just a wrapper around list.__getitem__(), but subtracts 1 from index'''
+        return list.__getitem__(self,self.m1gen(index)) # for a single index, use list's default indexing
+fLm1 = fancyIndexingListM1
 
 def intOrFloat(string):
     '''Not sure if your string is formatted as an int or a float? Use intOrFloat instead!'''
