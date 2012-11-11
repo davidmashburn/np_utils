@@ -39,7 +39,19 @@ def intOrFloat(string):
         return int(string)
     except ValueError:
         return float(string)
-
+def floatIntStringOrNone(s):
+    '''An even more generic version of intOrFloat... Might be better to use try-except instead of this, but it works for now...'''
+    if s=='None':
+        return None
+    dotC,eC,EC = s.count('.'),s.count('e'),s.count('E')
+    weirdDashCount = ( 0 if len(s)==1 else (s[1:].replace('e-','').replace('E-','')).count('-') )
+    if dotC>1 or eC>1 or EC>1 or not s.replace('e','').replace('E','').replace('.','').replace('-','').isdigit():
+        print 'Error! invalid format!'
+        return s
+    if dotC>0 or eC>0 or EC>0:
+        return float(s)
+    else:
+        return int(s)
 def flatten(l,repetitions=1):
     '''A wrapper around the generator-based list flattener (quite fast)'''
     retVal = l
@@ -60,7 +72,15 @@ def removeDuplicates(l):
        Modified version of code found here: http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order'''
     seen = set()
     return [ x for x in totuple(l) if x not in seen and not seen.add(x)]
-
+def deletecases(l,cases):
+    '''Delete all elements of list "cases" from list "l"'''
+    if not hasattr(cases,'__iter__'):
+        cases=[cases]
+    l=copy(l) # work on a copy
+    for c in cases:
+        for i in range(l.count(c)):
+            l.remove(c)
+    return l
 def partition(l,n,clip=True):
     '''Partition list "l" into "n"-sized chunks
        clip chops off whatever does not fit into n-sized chunks at the end'''
