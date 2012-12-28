@@ -84,7 +84,7 @@ def deletecases(l,cases):
 def partition(l,n,clip=True):
     '''Partition list "l" into "n"-sized chunks
        clip chops off whatever does not fit into n-sized chunks at the end'''
-    length = ( len(l)//n*n if clip else len(l) )
+    length = ( len(l)//n*n if clip else len(l) ) # //n*n is a clipping operation...NOT /n**2
     return [l[i:i+n] for i in range(0,length,n)]
 
 
