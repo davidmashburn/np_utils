@@ -88,6 +88,73 @@ def partition(l,n,clip=True):
     return [l[i:i+n] for i in range(0,length,n)]
 
 
+def getMaxDepth(l,depth=0):
+    '''Get the maximum depth of any nested structure.
+        For a numpy array, this is the same as ndim.'''
+    if not hasattr(l,'__iter__'):
+        return depth
+    else:
+        return max([getRecursiveDepth(i,depth+1) for i in l])
+
+def replaceNodesWithNone(l):
+    '''A useful way to present the structure of nested objects.
+        This can be directly compared from one object to another.'''
+    return ( None if not hasattr(l,'__len__') else
+              [replaceNodesWithNone(i) for i in l] )
+
+def applyInfix_ShallowCompare(f,x,y,depth=0):
+    '''Apply any function f to the elements of 2 nested list stuctures,
+        (like numpy does with + on arrays, but more general).
+        Unlike numpy. this defaults to trying to match shallowest structure first:
+            a(f,[A,B],[[1,2],[3,4]]) => [[f(A,1),f(A,2)],[f(B,3),f(B,4)]]
+        For this to work, x and y must have identical structures down to the point
+        where one ends in a node; after that, the other argument can take on any form.
+        To put it simpler, if we compare any 2 points in the structures x and y and
+        they are both lists, they must have the same length (it is fine if one or both are not a list).'''
+    a=applyInfix_ShallowCompare # "a" is just this function, used for recursion
+    if hasattr(x,'__iter__'):
+        if hasattr(y,'__iter__'):
+            if len(x)==len(y):
+                return [a(f,x[i],y[i],depth+1) for i in range(len(x))]
+            else:
+                raise TypeError("Nested structure mismatch at depth "+str(depth)+"!")
+        else:
+            return [a(f,i,y,depth+1) for i in x]
+    else:
+        if hasattr(y,'__iter__'):
+            return [a(f,x,i,depth+1) for i in y]
+        else:
+            return f(x,y)
+
+def applyInfix_DeepCompare(f,x,y,depth=0,xStructure=None,yStructure=None):
+    '''Apply any function f to the elements of 2 nested list stuctures,
+        (like numpy does with "+" on arrays, but more general).
+        Like numpy, this defaults to trying to match deepest structure first:
+            a(f,[A,B],[[1,2],[3,4]]) => [[f(A,1),f(B,2)],[f(A,3),f(B,4)]]
+        For this to work, the entire structure of one argument (x or y) must
+        be contained at every node in the other argument (y or x)'''
+    a=applyInfix_DeepCompare # "a" is just this function, used for recursion
+    depthX,depthY = getMaxDepth(x),getMaxDepth(y)
+    if xStructure!=None and depthX>depthY:
+        raise TypeError("Nested structure mismatch at depth "+str(depth)+"!")
+    elif yStructure!=None and depthX<depthY:
+        raise TypeError("Nested structure mismatch at depth "+str(depth)+"!")
+    elif depthX==depthY:
+        xStructure = (replaceNodesWithNone(x) if xStructure==None else xStructure)
+        yStructure = (replaceNodesWithNone(y) if yStructure==None else yStructure)
+        if xStructure==yStructure:
+            return applyInfix_ShallowCompare(f,x,y,depth+1)
+        else:
+            raise TypeError("Nested structure mismatch at depth "+str(depth)+"!")
+    elif depthX==0 or depthY==0:
+        return applyFunctionToNestedStructureA(f,x,y,depth+1)
+    elif depthX<depthY:
+        xStructure = (replaceNodesWithNone(x) if xStructure==None else xStructure)
+        return [a(f,x,i,depth+1,xStructure=xStructure) for i in y]
+    elif depthX>depthY:
+        yStructure = (replaceNodesWithNone(y) if yStructure==None else yStructure)
+        return [a(f,i,y,depth+1,yStructure=yStructure) for i in x]
+
 class fancyIndexingList(list):
     '''fancyIndexingList is overloaded as "fL"
        Gives lists the magical properties of numpy arrays, but without requiring regular shapes...
@@ -135,6 +202,7 @@ class fancyIndexingList(list):
             return self.new_fL(self[index[0]])[index[1:]] # recurse
     def __getslice__(self,i,j):
         return self.__getitem__(slice(i,j))
+
 fL = fancyIndexingList
 
 class fancyIndexingListM1(fancyIndexingList):
