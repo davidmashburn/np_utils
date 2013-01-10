@@ -87,6 +87,11 @@ def partition(l,n,clip=True):
     length = ( len(l)//n*n if clip else len(l) ) # //n*n is a clipping operation...NOT /n**2
     return [l[i:i+n] for i in range(0,length,n)]
 
+def roll(l,n=1):
+    '''Roll a list (like numpy.roll) -- For lists only! Uses concatenate with "+"'''
+    n = n%len(l)
+    return l[-n:]+l[:-n]
+
 def getMaxDepth(l,depth=0):
     '''Get the maximum depth of any nested structure.
         For a numpy array, this is the same as ndim.'''
@@ -101,21 +106,22 @@ def replaceNodesWithNone(l):
     return ( None if not hasattr(l,'__len__') else
               [replaceNodesWithNone(i) for i in l] )
 
-def applyAtNodes(f,l):
-    return [ ( applyAtDepth(f,i) if hasattr(i,'__iter__') else f(i) )
+def applyAtNodes(f,l,*args,**kdws):
+    return [ ( applyAtNodes(f,i,*args,**kdws) if hasattr(i,'__iter__') else f(i,*args,**kdws) )
              for i in l ]
-
-def applyAtAllDepths(f,l):
-    return f([ f( applyAtAllDepths(f,i) if hasattr(i,'__iter__') else f(i) )
+def applyAtAllDepths(f,l,*args,**kdws):
+    return f([ f( applyAtAllDepths(f,i,*args,**kdws) if hasattr(i,'__iter__') else f(i,*args,**kdws) )
              for i in l ])
-
-def applyAtDepth(f,l,depth=1):
-    '''Apply a unary function to any nested structure at a certain depth.'''
-    return [ ( ( applyAtDepth(f,i,depth-1)
+def applyAtDepth(f,l,depth,*args,**kdws):
+    '''Apply a unary function to any nested structure at a certain depth
+        With depth=0, this  is just f(l)).'''
+    if depth==0:
+        return f(l,*args,**kdws)
+    return [ ( ( applyAtDepth(f,i,depth-1,*args,**kdws)
                   if hasattr(i,'__iter__') else
                   i )
-                if depth>0 else
-                f(i) )
+                if depth>1 else
+                f(i,*args,**kdws) )
              for i in l ]
 
 def applyInfix_ShallowCompare(f,x,y,depth=0):
@@ -141,7 +147,7 @@ def applyInfix_ShallowCompare(f,x,y,depth=0):
             return [a(f,x,i,depth+1) for i in y]
         else:
             return f(x,y)
-
+applyInfix = applyInfix_ShallowCompare
 def applyInfix_DeepCompare(f,x,y,depth=0,xStructure=None,yStructure=None):
     '''Apply any function f to the elements of 2 nested list stuctures,
         (like numpy does with "+" on arrays, but more general).
