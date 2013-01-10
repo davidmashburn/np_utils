@@ -87,7 +87,6 @@ def partition(l,n,clip=True):
     length = ( len(l)//n*n if clip else len(l) ) # //n*n is a clipping operation...NOT /n**2
     return [l[i:i+n] for i in range(0,length,n)]
 
-
 def getMaxDepth(l,depth=0):
     '''Get the maximum depth of any nested structure.
         For a numpy array, this is the same as ndim.'''
@@ -101,6 +100,23 @@ def replaceNodesWithNone(l):
         This can be directly compared from one object to another.'''
     return ( None if not hasattr(l,'__len__') else
               [replaceNodesWithNone(i) for i in l] )
+
+def applyAtNodes(f,l):
+    return [ ( applyAtDepth(f,i) if hasattr(i,'__iter__') else f(i) )
+             for i in l ]
+
+def applyAtAllDepths(f,l):
+    return f([ f( applyAtAllDepths(f,i) if hasattr(i,'__iter__') else f(i) )
+             for i in l ])
+
+def applyAtDepth(f,l,depth=1):
+    '''Apply a unary function to any nested structure at a certain depth.'''
+    return [ ( ( applyAtDepth(f,i,depth-1)
+                  if hasattr(i,'__iter__') else
+                  i )
+                if depth>0 else
+                f(i) )
+             for i in l ]
 
 def applyInfix_ShallowCompare(f,x,y,depth=0):
     '''Apply any function f to the elements of 2 nested list stuctures,
