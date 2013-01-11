@@ -89,8 +89,11 @@ def partition(l,n,clip=True):
 
 def roll(l,n=1):
     '''Roll a list (like numpy.roll) -- For lists only! Uses concatenate with "+"'''
-    n = n%len(l)
-    return l[-n:]+l[:-n]
+    if hasattr(l,'__iter__'):
+        n = n%len(l)
+        return l[-n:]+l[:-n]
+    else:
+        return l
 
 def getMaxDepth(l,depth=0):
     '''Get the maximum depth of any nested structure.
@@ -103,7 +106,7 @@ def getMaxDepth(l,depth=0):
 def replaceNodesWithNone(l):
     '''A useful way to present the structure of nested objects.
         This can be directly compared from one object to another.'''
-    return ( None if not hasattr(l,'__len__') else
+    return ( None if not hasattr(l,'__iter__') else
               [replaceNodesWithNone(i) for i in l] )
 
 def applyAtNodes(f,l,*args,**kdws):
