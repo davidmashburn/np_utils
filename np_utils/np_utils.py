@@ -21,6 +21,15 @@ def limitInteriorPoints(l,numInteriorPoints,uniqueOnly=True):
         inds = np.unique(inds)
     return [ l[i] for i in inds ]
 
+def limitInteriorPointsInterpolating(l,numInteriorPoints):
+    '''Like limitInteriorPoints, but interpolates evenly instead; this also means it never clips'''
+    l=np.array(l)
+    if l.ndim==1:
+        l=l[None,:]
+    return [ [ np.interp(ind, range(len(l)), i)
+               for i in l.transpose() ]
+             for ind in np.linspace(0,len(sc),numInteriorPoints+2) ]
+
 def partitionNumpy(l,n):
     '''Like partition, but always clips and returns array, not list'''
     a=np.array(l)
@@ -71,6 +80,22 @@ def shape_multiply_zero_fill(arr,shapeMultiplier):
         #c = np.zeros(shm,arr.dtype)
         #c[tuple([(i//2) for i in shm])]=1
     return shape_multiply(arr,shapeMultiplier,oddOnly=True,adjustFunction=zeroFill)
+
+def interpNumpy(l,index):
+    '''Just like interp except that it uses numpy instead of lists.'''
+    l = np.array(l)
+    m = index % 1
+    if m==0:
+        return l[index]
+    else:
+        indexA,indexB = int(index), int(index) + (1 if index>=0 else -1)
+        return l[indexA]*(1-m) + l[indexB]*(m)
+
+def limitInteriorPointsInterpolating(l,numInteriorPoints):
+    '''Like limitInteriorPoints, but interpolates evenly instead; this also means it never clips'''
+    l=np.array(l)
+    return [ interpNumpy(l,ind)
+             for ind in np.linspace(0,len(l)-1,numInteriorPoints+2) ]
 
 # Thanks Wikipedia!!
 # A line-drawing algorithm by the pixel...

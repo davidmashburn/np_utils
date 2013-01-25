@@ -13,6 +13,8 @@ Notably:
                                     use like fl(someList)[someIndexingStuff]
     fancyIndexingListM1 (alias fLm1) -> like fL, but subtracts 1 from all indices recursively'''
 
+import operator
+
 def totuple(a):
     '''Makes tuples out of nested datastructures like lists and arrays.
        Authored by Bi Rico, http://stackoverflow.com/questions/10016352/convert-numpy-array-to-tuple'''
@@ -179,6 +181,34 @@ def applyInfix_DeepCompare(f,x,y,depth=0,xStructure=None,yStructure=None):
     elif depthX>depthY:
         yStructure = (replaceNodesWithNone(y) if yStructure==None else yStructure)
         return [a(f,i,y,depth+1,yStructure=yStructure) for i in x]
+
+def shallowAdd(x,y):
+    return applyInfix_ShallowCompare(operator.add,x,y)
+def shallowMul(x,y):
+    return applyInfix_ShallowCompare(operator.mul,x,y)
+def deepAdd(x,y):
+    return applyInfix_DeepCompare(operator.add,x,y)
+def deepAdd(x,y):
+    return applyInfix_DeepCompare(operator.mul,x,y)
+
+def interp(l,index):
+    '''Basically floating point indexing with interpolation in between.'''
+    m = index % 1
+    if m==0:
+        return l[index]
+    else:
+        indexA,indexB = int(index), int(index) + (1 if index>=0 else -1)
+        return l[indexA]*(1-m) + l[indexB]*(m)
+
+def interpGen(l,index):
+    '''Just like interp except that it uses the generic shallowAdd and shallowMul.'''
+    m = index % 1
+    if m==0:
+        return l[index]
+    else:
+        indexA,indexB = int(index), int(index) + (1 if index>=0 else -1)
+        return shallowAdd( shallowMul( l[indexA],(1-m) ),
+                            shallowMul( l[indexB],m ) )
 
 class fancyIndexingList(list):
     '''fancyIndexingList is overloaded as "fL"
