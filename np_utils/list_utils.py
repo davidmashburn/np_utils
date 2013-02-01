@@ -194,19 +194,21 @@ def deepAdd(x,y):
 def interp(l,index):
     '''Basically floating point indexing with interpolation in between.'''
     m = index % 1
+    indexA=int(index)
     if m==0:
-        return l[index]
+        return l[indexA]
     else:
-        indexA,indexB = int(index), int(index) + (1 if index>=0 else -1)
+        indexB = indexA + (1 if index>=0 else -1)
         return l[indexA]*(1-m) + l[indexB]*(m)
 
 def interpGen(l,index):
     '''Just like interp except that it uses the generic shallowAdd and shallowMul.'''
     m = index % 1
+    indexA=int(index)
     if m==0:
-        return l[index]
+        return l[indexA]
     else:
-        indexA,indexB = int(index), int(index) + (1 if index>=0 else -1)
+        indexB = (1 if index>=0 else -1)
         return shallowAdd( shallowMul( l[indexA],(1-m) ),
                             shallowMul( l[indexB],m ) )
 
