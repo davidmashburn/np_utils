@@ -69,6 +69,11 @@ def flatten(l,repetitions=1):
 def zipflat(*args):
     '''Like zip, but flattens the result'''
     return [j for i in zip(*args) for j in i]
+def ziptranspose(l):
+    '''Tranpose the two outer dimensions of a nest list
+       ( This is just a wrapper around zip(*l) )'''
+    return zip(*l)
+
 def removeDuplicates(l):
     '''Order preserving duplicate removal... automatically converts lists and arrays (which are unhashable) to nested tuples.
        Modified version of code found here: http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order'''
