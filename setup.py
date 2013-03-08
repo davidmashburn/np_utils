@@ -9,7 +9,7 @@ setup(
     scripts=[],
     url='http://pypi.python.org/pypi/np_utils/',
     license='LICENSE.txt',
-    description='',
+    description='collection of utilities for array and list manipulation',
     long_description=open('README.rst').read(),
     install_requires=[
                       'numpy>=1.0',
