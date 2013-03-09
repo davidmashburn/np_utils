@@ -91,6 +91,35 @@ def interpNumpy(l,index):
         indexA,indexB = int(index), int(index) + (1 if index>=0 else -1)
         return l[indexA]*(1-m) + l[indexB]*(m)
 
+def interpolatePlane(arr,floatIndex,axis=0):
+    '''Interpolate a hyperplane in an numpy array (basically just like normal indexing but with floats)
+       And yes, I know that scipy.interpolate would do a much better job...'''
+    assert axis<len(arr.shape),'Not enough dimensions in the array'
+    maxInd = arr.shape[axis]
+    assert 0<=floatIndex<=maxInd-1,'floatIndex ('+str(floatIndex)+') is out of bounds '+str([0,maxInd-1])+'!'
+    
+    slicer = ( slice(None), )*axis
+    ind = int(floatIndex)
+    rem = floatIndex-ind
+    indPlane = arr[slicer+(ind,)]
+    indp1Plane = (arr[slicer+(ind+1,)] if ind+1<arr.shape[axis] else 0)
+    plane = indPlane*(1-rem) + indp1Plane*rem
+    return plane
+def interpolateSumBelowAbove(arr,floatIndex,axis=0):
+    '''For any given index, interpolate the sum below and above this value'''
+    assert axis<len(arr.shape),'Not enough dimensions in the array'
+    maxInd = arr.shape[axis]
+    assert 0<=floatIndex<=maxInd,'floatIndex ('+str(floatIndex)+') is out of bounds ('+str([0,maxInd])+')!'
+    
+    slicer = ( slice(None), )*axis
+    ind = int(floatIndex)
+    rem = floatIndex-ind
+    indPlane = (arr[slicer+(ind,)] if ind<arr.shape[axis] else 0)
+    indp1Plane = (arr[slicer+(ind+1,)] if ind+1<arr.shape[axis] else 0)
+    below = np.sum(arr[slicer+(slice(None,ind),)],axis=axis)   + indPlane*rem
+    above = indp1Plane + np.sum(arr[slicer+(slice(ind+2,None),)],axis=axis) + indPlane*(1-rem)
+    return below,above
+
 def limitInteriorPointsInterpolating(l,numInteriorPoints):
     '''Like limitInteriorPoints, but interpolates evenly instead; this also means it never clips'''
     l=np.array(l)
