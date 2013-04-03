@@ -9,7 +9,9 @@ Notably:
 import numpy as np
 import scipy.sparse
 from copy import copy
+from collections import Counter
 
+from cmpGen import cmpGen
 from list_utils import *
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
@@ -165,7 +167,7 @@ def BresenhamFunction(p0,p1): # Generalization to n-dimensions
     imax = delta.index(max(delta)) # The dimension that we go the farthest in
     err = [ delta[imax]//2 ] * ndim
     
-    p = copy(p0)
+    p = list(p0) # make a shallow copy, and ensure it's a list
     l=[]
     for pmax in range(delta[imax]+1): # in the longest dimension, step evenly
         l.append(copy(p))
@@ -176,86 +178,88 @@ def BresenhamFunction(p0,p1): # Generalization to n-dimensions
                 err[i] += delta[imax]
     return l
 
-#Deprecated... check and delete
-'''def BresenhamPlane(p0,p1,p2): # Generalization for plane instead...
-    if p2==None:
-        return BresenhamFunction(p0,p1) # In case the last argument is None just use a plane...
-    
-    ndim = len(p0)
-    deltaA = [ p1[i]-p0[i] for i in range(ndim) ]
-    signsA = [ (-1 if d<0 else 1) for d in deltaA ]
-    deltaA = [ abs(d) for d in deltaA ]
-    imaxA = deltaA.index(max(deltaA)) # The dimension that we go the farthest in
-    errA = [ deltaA[imaxA]//2 ] * ndim
-    
-    deltaB = [ p2[i]-p0[i] for i in range(ndim) ]
-    signsB = [ (-1 if d<0 else 1) for d in deltaB ]
-    deltaB = [ abs(d) for d in deltaB ]
-    imaxB = deltaB.index(max(deltaB)) # The dimension that we go the farthest in
-    errB = [ deltaB[imaxB]//2 ] * ndim
-    
-    pA = copy(p0)
-    l=[]
-    for pmaxA in range(deltaA[imaxA]+1): # in the longest dimension, step evenly
-        for i in range(ndim):
-            errA[i] -= deltaA[i]
-            if i==imaxA or errA[i]<0:
-                pA[i] += signsA[i]
-                errA[i] += deltaA[imaxA]
-        pB = copy(pA)
-        for pmaxB in range(deltaB[imaxB]+1): # in the longest dimension, step evenly
-            l.append(copy(pB))
-            for i in range(ndim):
-                errB[i] -= deltaB[i]
-                if i==imaxB or errB[i]<0:
-                    pB[i] += signsB[i]
-                    errB[i] += deltaB[imaxB]
-    return l
-'''
+def polyArea(points):
+    '''This calculates the area of a general 2D polygon
+       Algorithm adapted from Darius Bacon's post:
+       http://stackoverflow.com/questions/451426/how-do-i-calculate-the-surface-area-of-a-2d-polygon'''
+    return 0.5*abs(sum( x0*y1 - x1*y0
+                        for ((x0, y0), (x1, y1)) in zip(points, roll(points)) ))
 
-def BresenhamTriangle(p0,p1,p2,fullPlane=False): # Generalization for triangle
+def _getMostCommonVal(l):
+    return Counter( l ).most_common()[0][0]
+
+def GetDirectionsOfSteepestSlope(borderPts):
+    '''Taking each dimension as the potential scanning dimension,
+       find the other dimension that has the largest slope.
+       Needs the list of points of the triangle's boundary.
+       Returns a list of integers (one for each dimension).
+       '''
+    ndim = len(borderPts[0])
+    def minMaxDiff(l):
+        return max(l)-min(l)
+    
+    maxSlopeDim = []
+    for i in range(ndim): # loop over all dimensions as the assumed scan dimension (i)
+        # Bin the points into hyper-planes with the same value on the i-axis
+        binnedPts = {}
+        for p in borderPts:
+            binnedPts.setdefault(p[i],[]).append(p)
+        
+        # Traversing along the i-axis, find the other dimension(s) with the greatest slope
+        # Collect the results in dimsOfGreatestExtent, a flat list of integers
+        dimsOfGreatestExtent = []
+        for pts in binnedPts.values(): # loop through the points in each bin (hyperplane)
+            deltas = [ minMaxDiff([ p[j] for p in pts ]) # get the maximum delta in each dimension
+                      for j in range(ndim) ]
+            maxExtent = max(deltas)
+            dimsOfGreatestExtent += [ j for j in range(ndim) if deltas[j]==maxExtent ]
+        
+        # Get the dimension that most often has the steepest slope
+        maxSlopeDim.append( _getMostCommonVal(dimsOfGreatestExtent) )
+    return maxSlopeDim
+
+def BresenhamTriangle(p0,p1,p2): # Generalization for triangle
+    '''Bresenham N-D triangle rasterization
+       Uses Bresenham N-D lines to rasterize the triangle
+       Holes are prevented by proper selection of dimensions:
+           the 'scan' dimension is fixed for each line (x')
+           the 'line' dimension has the maximum slope perpendicular to iscan (y')'''
     if p2==None:
         return BresenhamFunction(p0,p1) # In case the last argument is None just use a plane...
     
-    ndim = len(p0)
-    deltaA = [ p1[i]-p0[i] for i in range(ndim) ]
-    signsA = [ (-1 if d<0 else 1) for d in deltaA ]
-    deltaA = [ abs(d) for d in deltaA ]
-    imaxA = deltaA.index(max(deltaA)) # The dimension that we go the farthest in
-    errA = [ deltaA[imaxA]//2 ] * ndim
-    stepsA = deltaA[imaxA]+1
+    # Collect all the border points for the triangle and remove duplicates
+    borderPts = list(set(totuple(flatten( [ BresenhamFunction(pa,pb)
+                                           for pa,pb in ((p0,p1),(p1,p2),(p2,p0)) ] ))))
     
-    deltaB = [ p2[i]-p0[i] for i in range(ndim) ]
-    signsB = [ (-1 if d<0 else 1) for d in deltaB ]
-    deltaB = [ abs(d) for d in deltaB ]
-    imaxB = deltaB.index(max(deltaB)) # The dimension that we go the farthest in
-    errB = [ deltaB[imaxB]//2 ] * ndim
-    stepsB = deltaB[imaxB]+1
+    # Get the steepest dimension relative to every other dimension:
+    dSS = GetDirectionsOfSteepestSlope(borderPts)
+    iscan = _getMostCommonVal(dSS)
+    iline = dSS[iscan]
     
-    pA = copy(p0)
-    l=[]
-    for pmaxA in range(stepsA): # in the longest dimension, step evenly
-        for i in range(ndim):
-            errA[i] -= deltaA[i]
-            if i==imaxA or errA[i]<0:
-                pA[i] += signsA[i]
-                errA[i] += deltaA[imaxA]
-        pB = copy(pA)
-        if fullPlane:
-            stepsB_truncated = stepsB
+    #Sort the border points according to iscan (x') and then iline (y')
+    borderPtsSort = sorted(borderPts,  cmpGen( lambda x: (x[iscan],x[iline]) ) )
+    
+    minMaxList = []
+    for i,p in enumerate(borderPtsSort):
+        if borderPtsSort[i-1][iscan] != borderPtsSort[i][iscan]:
+            minMaxList.append([p,p]) # ensure there are always 2 points, even if they are the same
         else:
-            stepsB_truncated = (stepsB*stepsA - stepsB*pmaxA)//stepsA
-        # Unlike making a plane, only go a certain percentage of the way out to cut the plane down to a triangle
-        for pmaxB in range(stepsB_truncated): # in the longest dimension, step evenly, 
-        #for pmaxB in range(int( stepsB*(1.-1.*pmaxA/stepsA) )): # in the longest dimension, step evenly, 
-            l.append(copy(pB))
-            for i in range(ndim):
-                errB[i] -= deltaB[i]
-                if i==imaxB or errB[i]<0:
-                    pB[i] += signsB[i]
-                    errB[i] += deltaB[imaxB]
-    return l
-
+            minMaxList[-1][-1] = p
+    
+    # For each x'-y' plane, select the two most distant points to pass to the Bresenham function
+    # This is done by removing all points where the x' value is the same as the point before and after
+    #   and then partitioning the list into 2-element lists
+    # For each iscan (x') value, these have the min and max values in the iline (y') direction
+    #nBorder = len(borderPts)
+    #minMaxList = partition( [ p for i,p in enumerate(borderPtsSort)
+    #                            if not ( borderPtsSort[(i-1)%nBorder][iscan] ==
+    #                                     borderPtsSort[i][iscan] ==
+    #                                     borderPtsSort[(i+1)%nBorder][iscan] ) ]
+    #                       ,2 )
+    
+    # Draw Bresenham lines to rasterize the triangle (draw along y' direction for each x' value)
+    triPts = flatten([BresenhamFunction(start,end) for start,end in minMaxList ])
+    return triPts
 
 def ImageCircle(r):
     """Create a binary image of a circle radius r"""
