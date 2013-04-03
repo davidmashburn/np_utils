@@ -239,23 +239,13 @@ def BresenhamTriangle(p0,p1,p2): # Generalization for triangle
     #Sort the border points according to iscan (x') and then iline (y')
     borderPtsSort = sorted(borderPts,  cmpGen( lambda x: (x[iscan],x[iline]) ) )
     
+    # For each x' plane, select the two most distant points in y' to pass to the Bresenham function
     minMaxList = []
     for i,p in enumerate(borderPtsSort):
         if borderPtsSort[i-1][iscan] != borderPtsSort[i][iscan]:
             minMaxList.append([p,p]) # ensure there are always 2 points, even if they are the same
         else:
             minMaxList[-1][-1] = p
-    
-    # For each x'-y' plane, select the two most distant points to pass to the Bresenham function
-    # This is done by removing all points where the x' value is the same as the point before and after
-    #   and then partitioning the list into 2-element lists
-    # For each iscan (x') value, these have the min and max values in the iline (y') direction
-    #nBorder = len(borderPts)
-    #minMaxList = partition( [ p for i,p in enumerate(borderPtsSort)
-    #                            if not ( borderPtsSort[(i-1)%nBorder][iscan] ==
-    #                                     borderPtsSort[i][iscan] ==
-    #                                     borderPtsSort[(i+1)%nBorder][iscan] ) ]
-    #                       ,2 )
     
     # Draw Bresenham lines to rasterize the triangle (draw along y' direction for each x' value)
     triPts = flatten([BresenhamFunction(start,end) for start,end in minMaxList ])
