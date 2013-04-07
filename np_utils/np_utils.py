@@ -188,7 +188,69 @@ def polyArea(points):
 def _getMostCommonVal(l):
     return Counter( l ).most_common()[0][0]
 
-def GetDirectionsOfSteepestSlope(borderPts):
+def GetDirectionsOfSteepestSlope(p0,p1,p2):
+    '''For a 2-D plane in N-D space, fixing each dimension, identify the
+       other dimension with the steepest absolute slope.
+       
+       The mathematics behind this function:
+       -------------------------------------
+       Given the three three points that define a plane:
+        (x0,y0,z0,...),(x1,y1,z1,...),(x2,y2,z2,...)
+       A 2D planar triangle in N-D space is defined by the equations:
+        x = x0 + (x1-x0)*s + (x2-x0)*t
+        y = y0 + (y1-y0)*s + (y2-y0)*t
+        z = z0 + (z1-z0)*s + (z2-z0)*t
+        ...
+       
+       where s and t are parametric variables with:
+        0<=(s-t)<=1
+       
+       so,
+        s=0,t=0 -> point 0
+        s=1,t=0 -> point 1
+        s=0,t=1 -> point 2
+
+       We now look at one dimension (A) which can be any of x,y,z,...
+       Obviously if A is the same for all three points (aka, A0==A1==A2), then the plane is flat in that dimension
+       If this is not the case, the intersection of the plane (infinite) with any fixed value of A will be a line
+       
+       We start by fixing A to any constant value, so dA=0
+       
+       Our goal is to find for the other dimension (B) wth the greatest relative slope given that dA=0
+       We will compare these by looking at the relative values of dB/dw for some w which is related to the the parametric variables s and t
+       
+       Starting with da=0, we see that:
+        0 = dA = (A1-A0)*ds + (A2-A0)*dt
+       and
+        (A1-A0)*ds = -(A2-A0)*dt
+       
+       We define dw as this value:
+        dw = (A1-A0)*ds = -(A2-A0)*dt
+        
+       Now, in the B direction,
+        dB = (B1-B0)*ds + (B2-B0)*dt
+       mltiplying by (A1-A0)*(A2-A0) and collecting terms we find that:
+        (A1-A0)*(A2-A0) * dB = (A1-A0)*(A2-A0) * (B1-B0)*ds + (A1-A0)*(A2-A0) * (B2-B0)*dt
+        (A1-A0)*(A2-A0) * dB = (A2-A0) * (B1-B0) * dw - (A1-A0) * (B2-B0) * dw
+        (A1-A0)*(A2-A0) * dB = ((A2-A0)*(B1-B0) - (A1-A0)*(B2-B0)) * dw
+        (A1-A0)*(A2-A0) * dB = ( A0*(B2-B1) + A1*(B0-B2) + A2*(B1-B0) ) * dw
+
+
+       So, for any fixed dimension A, the dimension B will have the greatest relative slope (abs value) if it also maximizes the expression:
+        abs( A0*(B2-B1) + A1*(B0-B2) + A2*(B1-B0) )
+       This expression can be obtained easily using numpy by:
+        abs( dot( A_i , (roll(B_i,1) - roll(B_i,2)) ) )
+       This is the expression caclulated below as "slopeMatrix".'''
+    
+    pointsT = np.transpose([p0,p1,p2])
+    # Calculate the slope matrix (see the docstring)
+    bdiff = np.roll(pointsT,1,axis=1)-np.roll(pointsT,-1,axis=1)
+    slopeMatrix = abs(np.dot( pointsT,bdiff.T ))
+    # Now that we have the slope matrix values, we just look for the dimension(s) with the maximum value for each row
+    maxs = [ np.where(i==i.max())[0][0].tolist() for i in slopeMatrix ]
+    return maxs
+
+def GetDirectionsOfSteepestSlope_BorderCheckingVersion(borderPts):
     '''Taking each dimension as the potential scanning dimension,
        find the other dimension that has the largest slope.
        Needs the list of points of the triangle's boundary.
@@ -232,7 +294,8 @@ def BresenhamTriangle(p0,p1,p2): # Generalization for triangle
                                            for pa,pb in ((p0,p1),(p1,p2),(p2,p0)) ] ))))
     
     # Get the steepest dimension relative to every other dimension:
-    dSS = GetDirectionsOfSteepestSlope(borderPts)
+    #dSS = GetDirectionsOfSteepestSlope(borderPts)
+    dSS = GetDirectionsOfSteepestSlope(p0,p1,p2)
     iscan = _getMostCommonVal(dSS)
     iline = dSS[iscan]
     
