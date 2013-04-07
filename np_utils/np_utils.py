@@ -246,8 +246,12 @@ def GetDirectionsOfSteepestSlope(p0,p1,p2):
     # Calculate the slope matrix (see the docstring)
     bdiff = np.roll(pointsT,1,axis=1)-np.roll(pointsT,-1,axis=1)
     slopeMatrix = abs(np.dot( pointsT,bdiff.T ))
+    
     # Now that we have the slope matrix values, we just look for the dimension(s) with the maximum value for each row
-    maxs = [ np.where(i==i.max())[0][0].tolist() for i in slopeMatrix ]
+    maxs = [ ( None if i.max()==0 else
+               np.where(i==i.max())[0][0].tolist() )
+            for i in slopeMatrix ]
+    
     return maxs
 
 def GetDirectionsOfSteepestSlope_BorderCheckingVersion(borderPts):
@@ -294,10 +298,16 @@ def BresenhamTriangle(p0,p1,p2): # Generalization for triangle
                                            for pa,pb in ((p0,p1),(p1,p2),(p2,p0)) ] ))))
     
     # Get the steepest dimension relative to every other dimension:
-    #dSS = GetDirectionsOfSteepestSlope(borderPts)
+    #dSS = GetDirectionsOfSteepestSlope_BorderCheckingVersion(borderPts)
     dSS = GetDirectionsOfSteepestSlope(p0,p1,p2)
-    iscan = _getMostCommonVal(dSS)
+    
+    dSS_notNone = [i for i in dSS if i!=None]
+    if len(dSS_notNone) == 0:
+        # Degenerate slope matrix (all 0's); points are collinear
+        return borderPts
+    iscan = _getMostCommonVal(dSS_notNone)
     iline = dSS[iscan]
+    assert iline!=None,"iline is <flat>, that can't be right!"
     
     #Sort the border points according to iscan (x') and then iline (y')
     borderPtsSort = sorted(borderPts,  cmpGen( lambda x: (x[iscan],x[iline]) ) )
