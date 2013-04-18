@@ -11,7 +11,6 @@ import scipy.sparse
 from copy import copy
 from collections import Counter
 
-from cmpGen import cmpGen
 from list_utils import *
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
@@ -310,7 +309,7 @@ def BresenhamTriangle(p0,p1,p2): # Generalization for triangle
     assert iline!=None,"iline is <flat>, that can't be right!"
     
     #Sort the border points according to iscan (x') and then iline (y')
-    borderPtsSort = sorted(borderPts,  cmpGen( lambda x: (x[iscan],x[iline]) ) )
+    borderPtsSort = sorted( borderPts,  key = lambda x: (x[iscan],x[iline]) )
     
     # For each x' plane, select the two most distant points in y' to pass to the Bresenham function
     minMaxList = []
