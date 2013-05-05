@@ -65,6 +65,7 @@ def flatten(l,repetitions=1):
 
 # Another (nominally faster) version of this is: [ l for i in aList for j in i for k in j for l in k ]
 # but it's unable to deal with jagged arrays...
+# A terse but slower version of flatten (1 repetition) can also be acheived with: sum(aList,[])
 
 def zipflat(*args):
     '''Like zip, but flattens the result'''

@@ -7,7 +7,6 @@ Notably:
 '''
 
 import numpy as np
-import scipy.sparse
 from copy import copy
 from collections import Counter
 
