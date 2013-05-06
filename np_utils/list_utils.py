@@ -41,19 +41,17 @@ def intOrFloat(string):
         return int(string)
     except ValueError:
         return float(string)
-def floatIntStringOrNone(s):
-    '''An even more generic version of intOrFloat... Might be better to use try-except instead of this, but it works for now...'''
-    if s=='None':
+def floatIntStringOrNone(string):
+    '''An even more generic version of intOrFloat'''
+    if string=='None':
         return None
-    dotC,eC,EC = s.count('.'),s.count('e'),s.count('E')
-    weirdDashCount = ( 0 if len(s)==1 else (s[1:].replace('e-','').replace('E-','')).count('-') )
-    if dotC>1 or eC>1 or EC>1 or not s.replace('e','').replace('E','').replace('.','').replace('-','').isdigit():
-        print 'Error! invalid format!'
-        return s
-    if dotC>0 or eC>0 or EC>0:
-        return float(s)
-    else:
-        return int(s)
+    try:
+        return int(string)
+    except ValueError:
+        try:
+            return float(string)
+        except ValueError:
+            return string
 def flatten(l,repetitions=1):
     '''A wrapper around the generator-based list flattener (quite fast)'''
     retVal = l
