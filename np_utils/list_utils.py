@@ -52,6 +52,18 @@ def floatIntStringOrNone(string):
             return float(string)
         except ValueError:
             return string
+
+def minmaxIgnoreNone(Amin,Bmin, Amax,Bmax):
+    if   Amin==None:  newMin = Bmin
+    elif Bmin==None:  newMin = Amin
+    else:             newMin = min(Amin,Bmin)
+    
+    if   Amax==None:  newMax = Bmax
+    elif Bmax==None:  newMax = Amax
+    else:             newMax = min(Amax,Bmax)
+    
+    return newMin,newMax
+
 def flatten(l,repetitions=1):
     '''A wrapper around the generator-based list flattener (quite fast)'''
     retVal = l
