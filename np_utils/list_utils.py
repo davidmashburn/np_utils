@@ -26,15 +26,15 @@ def makeTuple(a):
     '''Like totuple, but ensures that you get a tuple out.'''
     retVal = totuple(a)
     return ( retVal if retVal.__class__==tuple else (retVal,) )
-def iterToX(f,iter):
+def iterToX(f,iterable):
     '''Replace all iterables in a nested structure (list,tuple,etc...)
        with another type "f" (actually just any function returning iterables)
        Like totuple, but more general, also uses list comprehensions
        instead of generators for more generality (notably sympy.Tuple)'''
     try:
-        return f(*[iterToX(f,i) for i in iter])
+        return f(*[iterToX(f,i) for i in iterable])
     except TypeError: # dig until we can dig no more!
-        return iter
+        return iterable
 def intOrFloat(string):
     '''Not sure if your string is formatted as an int or a float? Use intOrFloat instead!'''
     try:
