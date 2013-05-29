@@ -81,8 +81,22 @@ def shape_multiply_zero_fill(arr,shapeMultiplier):
         #c[tuple([(i//2) for i in shm])]=1
     return shape_multiply(arr,shapeMultiplier,oddOnly=True,adjustFunction=zeroFill)
 
+def interpNaNs(a):
+    '''Changes the underlying array to get rid of NaN values
+       If you want a copy instead, just use interpNaNs(a.copy())
+       Adapted from http://stackoverflow.com/questions/6518811/interpolate-nan-values-in-a-numpy-array'''
+    nans = np.isnan(a)
+    nz_1st = lambda z: z.nonzero()[0]
+    a[nans] = np.interp( nz_1st(nans), nz_1st(~nans), a[~nans] )
+    return a
+
+# A couple working but not-that-great interpolation functions:
 def interpNumpy(l,index):
-    '''Just like interp except that it uses numpy instead of lists.'''
+    '''Just like interp except that it uses numpy instead of lists.
+       If both l and index are integer, this function will also return integer values.
+       The more canonical way to this operation would be:
+           np.interp(index,range(len(l)),l)
+       (where l is already an array)'''
     l = np.array(l)
     m = index % 1
     if m==0:
