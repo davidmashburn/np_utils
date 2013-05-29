@@ -1,10 +1,19 @@
 #!/usr/bin/env python
 '''Utilities for array and list manipulation by David Mashburn.
 Notably:
-    functions to scale arrays by integer multiples (without interpolation)
-    drawing basic graphics objects on (multi-dimensional) numpy arrays:
-       line segment, triangle, circle, and sphere
-'''
+    shape_multiply, shape_multiply_zero_fill ->
+        functions to scale arrays by integer multiples (without interpolation)
+    
+    polyArea -> get polygon area from points
+    
+    BresenhamFunction, BresenhamTriangle ->
+        draw lines and planes in N-dimensional space
+    
+    ImageCircle, ImageSphere ->
+        draw circles and spheres (2D or 3D)
+    
+    The drawing functions only use integer arithmetic and return a
+    list of the coordinates that can be as array indices'''
 
 import numpy as np
 from copy import copy

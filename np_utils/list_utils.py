@@ -1,46 +1,41 @@
 #!/usr/bin/env python
 '''Utilities for list and tuple manipulation by David Mashburn.
-Notably:
+Most notably:
+    intOrFloat -> converts string to either int if possible, float otherwise
+    floatIntStringOrNone -> try to make an integer, then a float, then a string, otherwise None
+    
+    flatten -> drop 1 (or more if specified) levels of nesting from a data structure
+    zipflat -> returns the flattened form of a zip
+    ziptranspose -> pure-function version of zip(*_)
+    removeDuplicates -> order-perserving, recursive duplicate-remover
+    partition -> partition a list into n-sized chunks
+    roll -> list version of numpy.roll
+    interp -> floating point "indexing" using linear interpolation when necessary
+    
+    compose -> (multiple-)function composition
+    
     totuple -> recursive conversion of any nested iterable to tuple
     makeTuple -> like totuple, but for non-iterables, returns (a,)
     iterToX -> like totuple, but for any conversion
-    intOrFloat -> converts string to either int if possible, float otherwise
-    flatten -> drop 1 (or more if specified) levels of nesting from a data structure
-    zipflat -> returns the flattened form of a zip
-    removeDuplicates -> order-perserving, recursive duplicate-remover
-    partition -> partition a list into n-sized chunks
     fancyIndexingList (alias fL) -> powerful numpy-like indexing for lists,
                                     use like fl(someList)[someIndexingStuff]
-    fancyIndexingListM1 (alias fLm1) -> like fL, but subtracts 1 from all indices recursively'''
+    fancyIndexingListM1 (alias fLm1) -> like fL, but subtracts 1 from all indices recursively
+    
+    There are other functions here as well, but these are the most useful/novel'''
 
 import operator
 
-def totuple(a):
-    '''Makes tuples out of nested datastructures like lists and arrays.
-       Authored by Bi Rico, http://stackoverflow.com/questions/10016352/convert-numpy-array-to-tuple'''
-    try:
-        return tuple(totuple(i) for i in a)
-    except TypeError: # dig until we can dig no more!
-        return a
-def makeTuple(a):
-    '''Like totuple, but ensures that you get a tuple out.'''
-    retVal = totuple(a)
-    return ( retVal if retVal.__class__==tuple else (retVal,) )
-def iterToX(f,iterable):
-    '''Replace all iterables in a nested structure (list,tuple,etc...)
-       with another type "f" (actually just any function returning iterables)
-       Like totuple, but more general, also uses list comprehensions
-       instead of generators for more generality (notably sympy.Tuple)'''
-    try:
-        return f(*[iterToX(f,i) for i in iterable])
-    except TypeError: # dig until we can dig no more!
-        return iterable
+##########################
+## Some basic utilities ##
+##########################
+
 def intOrFloat(string):
     '''Not sure if your string is formatted as an int or a float? Use intOrFloat instead!'''
     try:
         return int(string)
     except ValueError:
         return float(string)
+
 def floatIntStringOrNone(string):
     '''An even more generic version of intOrFloat'''
     if string=='None':
@@ -64,22 +59,29 @@ def minmaxIgnoreNone(Amin,Bmin, Amax,Bmax):
     
     return newMin,newMax
 
+###########################
+## Simple list utilities ##
+###########################
+
 def flatten(l,repetitions=1):
-    '''A wrapper around the generator-based list flattener (quite fast)'''
+    '''A wrapper around the generator-based list flattener (quite fast)
+       
+       Use like: flatten(aList,3)
+       
+       Another (nominally faster) version of this is: [ l for i in aList for j in i for k in j for l in k ]
+       but it's unable to deal with jagged arrays...
+       
+       A terse but slower version of flatten (1 repetition) can also be acheived with: sum(aList,[])'''
     retVal = l
     for i in range(repetitions):
         gen = ( ( k if hasattr(k,'__iter__') else [k] ) for k in retVal ) # Makes the function able to deal with jagged arrays as well
         retVal = [j for i in gen for j in i]
     return retVal
-# Use like: flatten(aList,3)
-
-# Another (nominally faster) version of this is: [ l for i in aList for j in i for k in j for l in k ]
-# but it's unable to deal with jagged arrays...
-# A terse but slower version of flatten (1 repetition) can also be acheived with: sum(aList,[])
 
 def zipflat(*args):
     '''Like zip, but flattens the result'''
     return [j for i in zip(*args) for j in i]
+
 def ziptranspose(l):
     '''Tranpose the two outer dimensions of a nest list
        ( This is just a wrapper around zip(*l) )'''
@@ -90,15 +92,13 @@ def removeDuplicates(l):
        Modified version of code found here: http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order'''
     seen = set()
     return [ x for x in totuple(l) if x not in seen and not seen.add(x)]
+
 def deletecases(l,cases):
     '''Delete all elements of list "cases" from list "l"'''
     if not hasattr(cases,'__iter__'):
         cases=[cases]
-    l=copy(l) # work on a copy
-    for c in cases:
-        for i in range(l.count(c)):
-            l.remove(c)
-    return l
+    return [ i for i in l if i not in cases ]
+
 def partition(l,n,clip=True):
     '''Partition list "l" into "n"-sized chunks
        clip chops off whatever does not fit into n-sized chunks at the end'''
@@ -112,6 +112,68 @@ def roll(l,n=1):
         return l[-n:]+l[:-n]
     else:
         return l
+
+def interp(l,index):
+    '''Basically floating point indexing with interpolation in between.'''
+    m = index % 1
+    indexA=int(index)
+    if m==0:
+        return l[indexA]
+    else:
+        indexB = indexA + (1 if index>=0 else -1)
+        return l[indexA]*(1-m) + l[indexB]*(m)
+
+###############################
+## Some functional utilities ##
+###############################
+
+def compose(*functions):
+    '''A compose function for python, i.e.:
+       
+       compose(f1,f2,f3)(x) <--> f1(f2(f3(x)))
+       
+       Works best with single-argument functions, but the last function
+       can take any kind of arguments. ( No arrows yet ;-) )'''
+    if len(functions)==1:
+        return functions[0]
+    else:
+        return lambda *x,**kwds: functions[0](compose(*functions[1:])(*x,**kwds))
+
+def mapf(f):
+    '''Just the functional form of _ 0> map(f,_)'''
+    return lambda x: map(f,x)
+
+def packargs(*x):
+    '''Takes an unpacked list of arguments as a tuple instead
+       The opposite of the * operator'''
+    return x
+
+##########################################
+## Some utilities for nested structures ##
+##########################################
+
+def totuple(a):
+    '''Makes tuples out of nested datastructures like lists and arrays.
+       Authored by Bi Rico, http://stackoverflow.com/questions/10016352/convert-numpy-array-to-tuple'''
+    try:
+        return tuple(totuple(i) for i in a)
+    except TypeError: # dig until we can dig no more!
+        return a
+
+def makeTuple(a):
+    '''Like totuple, but ensures that you get a tuple out.'''
+    retVal = totuple(a)
+    return ( retVal if retVal.__class__==tuple else (retVal,) )
+
+def iterToX(f,iterable):
+    '''Replace all iterables in a nested structure (list,tuple,etc...)
+       with another type "f" (actually just any function returning iterables)
+       Like totuple, but more general, also uses list comprehensions
+       instead of generators for more generality (notably sympy.Tuple)'''
+    try:
+        return f(*[iterToX(f,i) for i in iterable])
+    except TypeError: # dig until we can dig no more!
+        return iterable
 
 def getMaxDepth(l,depth=0):
     '''Get the maximum depth of any nested structure.
@@ -130,9 +192,11 @@ def replaceNodesWithNone(l):
 def applyAtNodes(f,l,*args,**kdws):
     return [ ( applyAtNodes(f,i,*args,**kdws) if hasattr(i,'__iter__') else f(i,*args,**kdws) )
              for i in l ]
+
 def applyAtAllDepths(f,l,*args,**kdws):
     return f([ f( applyAtAllDepths(f,i,*args,**kdws) if hasattr(i,'__iter__') else f(i,*args,**kdws) )
              for i in l ])
+
 def applyAtDepth(f,l,depth,*args,**kdws):
     '''Apply a unary function to any nested structure at a certain depth
         With depth=0, this  is just f(l)).'''
@@ -168,7 +232,9 @@ def applyInfix_ShallowCompare(f,x,y,depth=0):
             return [a(f,x,i,depth+1) for i in y]
         else:
             return f(x,y)
+
 applyInfix = applyInfix_ShallowCompare
+
 def applyInfix_DeepCompare(f,x,y,depth=0,xStructure=None,yStructure=None):
     '''Apply any function f to the elements of 2 nested list stuctures,
         (like numpy does with "+" on arrays, but more general).
@@ -200,22 +266,15 @@ def applyInfix_DeepCompare(f,x,y,depth=0,xStructure=None,yStructure=None):
 
 def shallowAdd(x,y):
     return applyInfix_ShallowCompare(operator.add,x,y)
+    
 def shallowMul(x,y):
     return applyInfix_ShallowCompare(operator.mul,x,y)
+    
 def deepAdd(x,y):
     return applyInfix_DeepCompare(operator.add,x,y)
+    
 def deepAdd(x,y):
     return applyInfix_DeepCompare(operator.mul,x,y)
-
-def interp(l,index):
-    '''Basically floating point indexing with interpolation in between.'''
-    m = index % 1
-    indexA=int(index)
-    if m==0:
-        return l[indexA]
-    else:
-        indexB = indexA + (1 if index>=0 else -1)
-        return l[indexA]*(1-m) + l[indexB]*(m)
 
 def interpGen(l,index):
     '''Just like interp except that it uses the generic shallowAdd and shallowMul.'''
