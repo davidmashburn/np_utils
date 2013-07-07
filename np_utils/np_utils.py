@@ -206,6 +206,16 @@ def polyArea(points):
     return 0.5*abs(sum( x0*y1 - x1*y0
                         for ((x0, y0), (x1, y1)) in zip(points, roll(points)) ))
 
+def pointDistance(point0,point1):
+    deltas = ( np.array(point1) - point0 ) **2
+    return np.sqrt(np.sum(deltas,axis=-1)).tolist()
+
+def polyPerimeter(points,closeLoop=True):
+    '''This calculates the length of a (default closed) poly-line'''
+    if closeLoop:
+        points = np.concatenate([points,[points[0]]])
+    return sum(pointDistance(points[1:],points[:-1]))
+
 def _getMostCommonVal(l):
     return Counter( l ).most_common()[0][0]
 

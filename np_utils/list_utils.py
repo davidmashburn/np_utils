@@ -273,7 +273,7 @@ def shallowMul(x,y):
 def deepAdd(x,y):
     return applyInfix_DeepCompare(operator.add,x,y)
     
-def deepAdd(x,y):
+def deepMul(x,y):
     return applyInfix_DeepCompare(operator.mul,x,y)
 
 def interpGen(l,index):
