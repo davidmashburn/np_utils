@@ -181,7 +181,20 @@ def getMaxDepth(l,depth=0):
     if not hasattr(l,'__iter__'):
         return depth
     else:
-        return max([getRecursiveDepth(i,depth+1) for i in l])
+        return max([getMaxDepth(i,depth+1) for i in l])
+
+def getBoundingShape(l):
+    '''Get the minimum shape of an ND-array that will hold this structure.
+       For a numpy array, this is the same as shape.
+       This function can only be called on iterables and will fail otherwise;
+       (atomic objects have no shape)'''
+    shape = []
+    childShapes = [ getBoundingShape(i) for i in l if hasattr(i,'__iter__') ]
+    if len(childShapes)>0:
+        maxLen = max([ len(s) for s in childShapes ])
+        for i in range(maxLen):
+            shape.append( max( [ s[i] for s in childShapes if len(s)>i] ) )
+    return (len(l),)+tuple(shape)
 
 def replaceNodesWithNone(l):
     '''A useful way to present the structure of nested objects.
