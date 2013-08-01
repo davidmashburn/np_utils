@@ -7,7 +7,7 @@ Most notably:
     flatten -> drop 1 (or more if specified) levels of nesting from a data structure
     zipflat -> returns the flattened form of a zip
     ziptranspose -> pure-function version of zip(*_)
-    removeDuplicates -> order-perserving, recursive duplicate-remover
+    removeDuplicates -> order-perserving, duplicate-remover
     partition -> partition a list into n-sized chunks
     roll -> list version of numpy.roll
     interp -> floating point "indexing" using linear interpolation when necessary
@@ -48,16 +48,29 @@ def floatIntStringOrNone(string):
         except ValueError:
             return string
 
-def minmaxIgnoreNone(Amin,Bmin, Amax,Bmax):
-    if   Amin==None:  newMin = Bmin
-    elif Bmin==None:  newMin = Amin
-    else:             newMin = min(Amin,Bmin)
-    
-    if   Amax==None:  newMax = Bmax
-    elif Bmax==None:  newMax = Amax
-    else:             newMax = min(Amax,Bmax)
-    
-    return newMin,newMax
+############################
+## Flow control utilities ##
+############################
+
+def minmax(a):
+    '''A really simple function that makes it cleaner to get the min and max
+       from an expression without duplication or creating a local variable'''
+    return min(a),max(a)
+
+def callFunctionIfNotNone(f,a,b):
+    ''''A really simple function to call a function only if both areguments
+        are not None'''
+    if a==None:   return b
+    elif b==None: return a
+    else:         return f(a,b)
+
+def minmaxIgnoreNone(Amin,Bmin, Amax,Bmax): ## pairwiseMinMaxIgnoreNone(Amin,Bmin, Amax,Bmax):
+    '''Given two minima and two maxima, calculate the global minima and maxima,
+       ignoring values that are None
+       
+       TODO: This should be renamed (maybe pairwiseMinMaxIgnoreNone?) to avoid confusion with minmax
+       BTW, when you do fix the name, realiz that the max was computing mins instead!!!!''' #TODO
+    return callFunctionIfNotNone(min,Amin,Bmin),callFunctionIfNotNone(max,Amax,Bmax)
 
 ###########################
 ## Simple list utilities ##

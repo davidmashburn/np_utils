@@ -202,9 +202,41 @@ def BresenhamFunction(p0,p1): # Generalization to n-dimensions
 def polyArea(points):
     '''This calculates the area of a general 2D polygon
        Algorithm adapted from Darius Bacon's post:
-       http://stackoverflow.com/questions/451426/how-do-i-calculate-the-surface-area-of-a-2d-polygon'''
-    return 0.5*abs(sum( x0*y1 - x1*y0
-                        for ((x0, y0), (x1, y1)) in zip(points, roll(points)) ))
+       http://stackoverflow.com/questions/451426/how-do-i-calculate-the-surface-area-of-a-2d-polygon
+       Updated to a numpy equivalent for speed'''
+    x0,y0 = np.array(points).T # force to numpy array and transpose
+    x1,y1 = np.roll(points,-1,axis=0).T
+    return 0.5*np.abs(np.sum( x0*y1 - x1*y0 ))
+    
+    # Non-numpy version:
+    #return 0.5*abs(sum( x0*y1 - x1*y0
+    #                   for ((x0, y0), (x1, y1)) in zip(points, roll(points)) ))
+
+
+def polyCentroid(points):
+    '''Compute the centroid of a generic 2D polygon'''
+    x0,y0 = np.array(points).T # force to numpy array and transpose
+    x1,y1 = np.roll(x0,-1), np.roll(y0,-1)     # roll to get the following values
+    c = x0*y1-x1*y0                            # the cross-term
+    area6 = 3.*np.sum(c)                       # 6*area
+    x,y = np.sum((x0+x1)*c), np.sum((y0+y1)*c) # compute the main centroid calculation
+    return x/area6, y/area6
+    
+    # Non-numpy version:
+    #x = sum( (x0+x1)*(x0*y1-x1*y0)
+    #        for ((x0, y0), (x1, y1)) in zip(points, roll(points)) )
+    #y = sum( (y0+y1)*(y0*x1-y1*x0)
+    #        for ((x0, y0), (x1, y1)) in zip(points, roll(points)) )
+    #return x/area6,y/area6
+    
+    # Single function version:
+    #def _centrX(points):
+    #    '''Compute the x-coordinate of the centroid
+    #       To computer y, reverse the order of x and y in points'''
+    #    return sum( (x0+x1)*(x0*y1-x1*y0)
+    #               for ((x0, y0), (x1, y1)) in zip(points, roll(points)) )
+    #return _centrX(points)/area6,_centrX([p[::-1] for p in points])/area6
+
 
 def pointDistance(point0,point1):
     deltas = ( np.array(point1) - point0 ) **2
