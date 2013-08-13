@@ -282,7 +282,7 @@ def GetDirectionsOfSteepestSlope(p0,p1,p2):
        Our goal is to find for the other dimension (B) wth the greatest relative slope given that dA=0
        We will compare these by looking at the relative values of dB/dw for some w which is related to the the parametric variables s and t
        
-       Starting with da=0, we see that:
+       Starting with dA=0, we see that:
         0 = dA = (A1-A0)*ds + (A2-A0)*dt
        and
         (A1-A0)*ds = -(A2-A0)*dt
@@ -292,7 +292,7 @@ def GetDirectionsOfSteepestSlope(p0,p1,p2):
         
        Now, in the B direction,
         dB = (B1-B0)*ds + (B2-B0)*dt
-       mltiplying by (A1-A0)*(A2-A0) and collecting terms we find that:
+       multiplying by (A1-A0)*(A2-A0) and collecting terms we find that:
         (A1-A0)*(A2-A0) * dB = (A1-A0)*(A2-A0) * (B1-B0)*ds + (A1-A0)*(A2-A0) * (B2-B0)*dt
         (A1-A0)*(A2-A0) * dB = (A2-A0) * (B1-B0) * dw - (A1-A0) * (B2-B0) * dw
         (A1-A0)*(A2-A0) * dB = ((A2-A0)*(B1-B0) - (A1-A0)*(B2-B0)) * dw
@@ -302,7 +302,7 @@ def GetDirectionsOfSteepestSlope(p0,p1,p2):
        So, for any fixed dimension A, the dimension B will have the greatest relative slope (abs value) if it also maximizes the expression:
         abs( A0*(B2-B1) + A1*(B0-B2) + A2*(B1-B0) )
        This expression can be obtained easily using numpy by:
-        abs( dot( A_i , (roll(B_i,1) - roll(B_i,2)) ) )
+        abs( dot( A_i , (roll(B_i,1) - roll(B_i,-1)) ) )
        This is the expression caclulated below as "slopeMatrix".'''
     
     pointsT = np.transpose([p0,p1,p2])
