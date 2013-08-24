@@ -147,7 +147,7 @@ def limitInteriorPointsInterpolating(l,numInteriorPoints):
     '''Like limitInteriorPoints, but interpolates evenly instead; this also means it never clips'''
     l=np.array(l)
     return [ interpNumpy(l,ind)
-             for ind in np.linspace(0,len(l)-1,numInteriorPoints+2) ]
+            for ind in np.linspace(0,len(l)-1,numInteriorPoints+2) ]
 
 # Thanks Wikipedia!!
 # A line-drawing algorithm by the pixel...
@@ -199,6 +199,39 @@ def BresenhamFunction(p0,p1): # Generalization to n-dimensions
                 err[i] += delta[imax]
     return l
 
+def FindOptimalScaleAndTranslationBetweenPointsAndReference(points,pointsRef):
+    '''Find the (non-rotational) transformation that best overlaps points and pointsRef
+       aka, minimize the distance between:
+       (xref[i],yref[i],...)
+       and
+       (a*x[i]+x0,a*y[i]+y0,...)
+       using linear least squares
+       
+       return the transformation parameters: a,(x0,y0,...)'''
+    # Force to array of floats:
+    points = np.array(points,dtype=np.float)
+    pointsRef = np.array(pointsRef,dtype=np.float)
+
+    # Compute some means:
+    pm     = points.mean(axis=0)
+    prefm  = pointsRef.mean(axis=0)
+    p2m    = (points**2).mean(axis=0)
+    pTpref = (points*pointsRef).mean(axis=0)
+    
+    a = ((   (pm*prefm).sum() - pTpref.sum()   ) /
+         #   -------------------------------     # fake fraction bar...
+         (      (pm**2).sum() - p2m.sum()      ))
+    p0 = prefm - a*pm
+    return a,p0
+    
+    # More traditional version (2 dimensions only):
+    # xm,ym = pm
+    # xrefm,yrefm = prefm
+    # x2m,y2m = p2m
+    # xTxref,yTyref = pTpref
+    # a = 1.*(xm*xrefm - xCxref + ym*yrefm - yCyref) / (xm**2 - x2m + ym**2 - y2m)
+    # x0,y0 = xrefm - a*xm,yrefm - a*ym
+
 def polyArea(points):
     '''This calculates the area of a general 2D polygon
        Algorithm adapted from Darius Bacon's post:
@@ -211,7 +244,6 @@ def polyArea(points):
     # Non-numpy version:
     #return 0.5*abs(sum( x0*y1 - x1*y0
     #                   for ((x0, y0), (x1, y1)) in zip(points, roll(points)) ))
-
 
 def polyCentroid(points):
     '''Compute the centroid of a generic 2D polygon'''
@@ -236,7 +268,6 @@ def polyCentroid(points):
     #    return sum( (x0+x1)*(x0*y1-x1*y0)
     #               for ((x0, y0), (x1, y1)) in zip(points, roll(points)) )
     #return _centrX(points)/area6,_centrX([p[::-1] for p in points])/area6
-
 
 def pointDistance(point0,point1):
     deltas = ( np.array(point1) - point0 ) **2

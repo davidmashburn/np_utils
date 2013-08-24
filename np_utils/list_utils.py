@@ -237,7 +237,7 @@ def applyAtDepth(f,l,depth,*args,**kdws):
 
 def applyInfix_ShallowCompare(f,x,y,depth=0):
     '''Apply any function f to the elements of 2 nested list stuctures,
-        (like numpy does with + on arrays, but more general).
+        (like numpy does with "+" on arrays, but more general).
         Unlike numpy. this defaults to trying to match shallowest structure first:
             a(f,[A,B],[[1,2],[3,4]]) => [[f(A,1),f(A,2)],[f(B,3),f(B,4)]]
         For this to work, x and y must have identical structures down to the point
