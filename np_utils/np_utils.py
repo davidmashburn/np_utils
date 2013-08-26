@@ -199,6 +199,25 @@ def BresenhamFunction(p0,p1): # Generalization to n-dimensions
                 err[i] += delta[imax]
     return l
 
+def linearTransform( points,newRefLine,mirrored=False ):
+    '''Transforms points from a (0,0) -> (1,0) reference coordinate system
+       to a (x1,y1) -> (x2,y2) coordinate system.
+       Optional mirroring.'''
+    newRefLine = np.array(newRefLine)
+    dx,dy = (newRefLine[1]-newRefLine[0])
+    mir = (-1 if mirrored else 1)
+    return np.dot( points, [[dx,dy],[-dy*mir,dx*mir]] ) + newRefLine[0]
+
+def reverseLinearTransform(points,oldRefLine,mirrored=False):
+    '''Transforms points from a (x1,y1) -> (x2,y2) reference coordinate system
+       to a (0,0) -> (1,0) coordinate system.
+       Optional mirroring.'''
+    oldRefLine = np.array(oldRefLine)
+    dx,dy = (oldRefLine[1]-oldRefLine[0])
+    points = (points - oldRefLine[0])
+    mir = (-1 if mirrored else 1)
+    return np.dot( points, [[dx,-dy*mir],[dy,dx*mir]] ) * 1./(dx**2+dy**2)
+
 def FindOptimalScaleAndTranslationBetweenPointsAndReference(points,pointsRef):
     '''Find the (non-rotational) transformation that best overlaps points and pointsRef
        aka, minimize the distance between:
