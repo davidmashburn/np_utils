@@ -299,6 +299,10 @@ def polyPerimeter(points,closeLoop=True):
     return sum(pointDistance(points[1:],points[:-1]))
 
 def _getMostCommonVal(l):
+    '''Get the most-occuring value in a list.
+       When multiple values occur the same number of times, returns the minimum one
+       Example:
+           _getMostCommonVal([1,2,4,3,4,5,6,3,5]) -> 3'''
     return Counter( l ).most_common()[0][0]
 
 def GetDirectionsOfSteepestSlope(p0,p1,p2):
