@@ -23,6 +23,11 @@ from list_utils import *
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
 
+def multidot(*args):
+    '''Multiply multiple arguments with np.dot:
+       reduce(np.dot,args,1)'''
+    return reduce(np.dot,args,1)
+
 def limitInteriorPoints(l,numInteriorPoints,uniqueOnly=True):
     '''return the list l with only the endpoints and a few interior points (uniqueOnly will duplicate if too few points)'''
     inds = np.linspace(0,len(l)-1,numInteriorPoints+2).round().astype(np.integer)
