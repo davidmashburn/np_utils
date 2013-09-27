@@ -50,6 +50,29 @@ def partitionNumpy(l,n):
     a.resize(len(l)//n,n)
     return a
 
+def addBorder(arr,borderValue=0,borderThickness=1,axis=None):
+    '''For an ND array, create a new array with a border of specified
+       value around the entire original array; optional thickness (default 1)'''
+    # a slice of None or a single int index; handles negative index cases
+    allOrOne = ( slice(None) if axis==None else
+               ( axis        if axis>=0 else 
+                 arr.ndim+axis ))
+    # list of border thickness around each dimension (as an array)
+    tArr = np.zeros(arr.ndim)
+    tArr[allOrOne] = borderThickness
+    # a new array stretched to accommodate the border; fill with border Value
+    arrNew = np.empty( 2*tArr+arr.shape, dtype=arr.dtype )
+    arrNew[:]=borderValue
+    # a slice object that cuts out the new border
+    if axis==None:
+        sl = [slice(borderThickness,-borderThickness)]*arr.ndim
+    else:
+        sl = [slice(None)]*arr.ndim
+        sl[axis] = slice(borderThickness,-borderThickness)
+    # use the slice object to set the interior of the new array to the old array
+    arrNew[sl] = arr
+    return arrNew
+
 def shape_multiply(arr,shapeMultiplier, oddOnly=False, adjustFunction=None):
     '''Works like tile except that it keeps all like elements clumped\n'''
     '''Essentially a non-interpolating multi-dimensional image up-scaler'''

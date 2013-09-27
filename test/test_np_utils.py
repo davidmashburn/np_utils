@@ -8,6 +8,35 @@ from collections import Counter
 import np_utils
 from np_utils import *
 
+def test_addBorder_0():
+    v = [[[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+         [[0, 0, 0], [0, 2, 0], [0, 2, 0], [0, 2, 0], [0, 0, 0]],
+         [[0, 0, 0], [0, 2, 0], [0, 2, 0], [0, 2, 0], [0, 0, 0]],
+         [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]]
+    assert np.all( addBorder(2*np.ones([2,3,1])) == v )
+
+def test_addBorder_0_th2():
+    v = np.zeros([6,5,5])
+    v[2:-2,2,2]=2
+    assert np.all( addBorder(2*np.ones([2,1,1]),borderThickness=2)==v )
+
+def test_addBorder_5():
+    v = [[[5, 5, 5], [5, 5, 5], [5, 5, 5], [5, 5, 5], [5, 5, 5]],
+         [[5, 5, 5], [5, 2, 5], [5, 2, 5], [5, 2, 5], [5, 5, 5]],
+         [[5, 5, 5], [5, 2, 5], [5, 2, 5], [5, 2, 5], [5, 5, 5]],
+         [[5, 5, 5], [5, 5, 5], [5, 5, 5], [5, 5, 5], [5, 5, 5]]]
+    assert np.all( addBorder(2*np.ones([2,3,1]),borderValue=5) == v )
+
+def test_addBorder_axis1():
+    v = [[[0], [2], [2], [2], [0]],
+         [[0], [2], [2], [2], [0]]]
+    assert np.all( addBorder(2*np.ones([2,3,1]),axis=1) == v )
+
+def test_addBorder_axism1():
+    v = [[[0, 2, 0], [0, 2, 0], [0, 2, 0]],
+         [[0, 2, 0], [0, 2, 0], [0, 2, 0]]]
+    assert np.all( addBorder(2*np.ones([2,3,1]),axis=-1) == v )
+
 def test_limitInteriorPoints_r5_0_True():
     assert limitInteriorPoints(range(5),0,uniqueOnly=True) == [0,4]
 
