@@ -282,7 +282,7 @@ def applyInfix_DeepCompare(f,x,y,depth=0,xStructure=None,yStructure=None):
         else:
             raise TypeError("Nested structure mismatch at depth "+str(depth)+"!")
     elif depthX==0 or depthY==0:
-        return applyFunctionToNestedStructureA(f,x,y,depth+1)
+        return applyInfix_ShallowCompare(f,x,y,depth+1)
     elif depthX<depthY:
         xStructure = (replaceNodesWithNone(x) if xStructure==None else xStructure)
         return [a(f,x,i,depth+1,xStructure=xStructure) for i in y]
