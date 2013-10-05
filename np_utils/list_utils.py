@@ -1,22 +1,20 @@
 #!/usr/bin/env python
 '''Utilities for list and tuple manipulation by David Mashburn.
 Most notably:
-    intOrFloat -> converts string to either int if possible, float otherwise
-    floatIntStringOrNone -> try to make an integer, then a float, then a string, otherwise None
-    
     flatten -> drop 1 (or more if specified) levels of nesting from a data structure
     zipflat -> returns the flattened form of a zip
     ziptranspose -> pure-function version of zip(*_)
+    deletecases -> remove all occurrences of each of cases from a list
     removeDuplicates -> order-perserving, duplicate-remover
     partition -> partition a list into n-sized chunks
     roll -> list version of numpy.roll
     interp -> floating point "indexing" using linear interpolation when necessary
     
-    compose -> (multiple-)function composition
-    
     totuple -> recursive conversion of any nested iterable to tuple
     makeTuple -> like totuple, but for non-iterables, returns (a,)
+    getMaxDepth -> get the maximum depth level of a nested list
     iterToX -> like totuple, but for any conversion
+    
     fancyIndexingList (alias fL) -> powerful numpy-like indexing for lists,
                                     use like fl(someList)[someIndexingStuff]
     fancyIndexingListM1 (alias fLm1) -> like fL, but subtracts 1 from all indices recursively
@@ -25,56 +23,9 @@ Most notably:
 
 import operator
 
-##########################
-## Some basic utilities ##
-##########################
-
-def intOrFloat(string):
-    '''Not sure if your string is formatted as an int or a float? Use intOrFloat instead!'''
-    try:
-        return int(string)
-    except ValueError:
-        return float(string)
-
-def floatIntStringOrNone(string):
-    '''An even more generic version of intOrFloat'''
-    if string=='None':
-        return None
-    try:
-        return int(string)
-    except ValueError:
-        try:
-            return float(string)
-        except ValueError:
-            return string
-
-############################
-## Flow control utilities ##
-############################
-
-def minmax(a):
-    '''A really simple function that makes it cleaner to get the min and max
-       from an expression without duplication or creating a local variable'''
-    return min(a),max(a)
-
-def callFunctionIfNotNone(f,a,b):
-    ''''A really simple function to call a function only if both areguments
-        are not None'''
-    if a==None:   return b
-    elif b==None: return a
-    else:         return f(a,b)
-
-def minmaxIgnoreNone(Amin,Bmin, Amax,Bmax): ## pairwiseMinMaxIgnoreNone(Amin,Bmin, Amax,Bmax):
-    '''Given two minima and two maxima, calculate the global minima and maxima,
-       ignoring values that are None
-       
-       TODO: This should be renamed (maybe pairwiseMinMaxIgnoreNone?) to avoid confusion with minmax
-       BTW, when you do fix the name, realiz that the max was computing mins instead!!!!''' #TODO
-    return callFunctionIfNotNone(min,Amin,Bmin),callFunctionIfNotNone(max,Amax,Bmax)
-
-###########################
-## Simple list utilities ##
-###########################
+###############################
+## Some basic list utilities ##
+###############################
 
 def flatten(l,repetitions=1):
     '''A wrapper around the generator-based list flattener (quite fast)
@@ -135,31 +86,6 @@ def interp(l,index):
     else:
         indexB = indexA + (1 if index>=0 else -1)
         return l[indexA]*(1-m) + l[indexB]*(m)
-
-###############################
-## Some functional utilities ##
-###############################
-
-def compose(*functions):
-    '''A compose function for python, i.e.:
-       
-       compose(f1,f2,f3)(x) <--> f1(f2(f3(x)))
-       
-       Works best with single-argument functions, but the last function
-       can take any kind of arguments. ( No arrows yet ;-) )'''
-    if len(functions)==1:
-        return functions[0]
-    else:
-        return lambda *x,**kwds: functions[0](compose(*functions[1:])(*x,**kwds))
-
-def mapf(f):
-    '''Just the functional form of _ 0> map(f,_)'''
-    return lambda x: map(f,x)
-
-def packargs(*x):
-    '''Takes an unpacked list of arguments as a tuple instead
-       The opposite of the * operator'''
-    return x
 
 ##########################################
 ## Some utilities for nested structures ##
