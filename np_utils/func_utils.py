@@ -8,6 +8,7 @@ Functions that generate functions:
     mapf -> make a function from the map of a function
     compose -> (multiple) function composition
     fork -> J language style hierarchical function combination
+    constf -> make a function that always returns the same value
 '''
 
 def identity(x):
@@ -60,3 +61,12 @@ def fork(f,*functionList):
        
        In the simplest case, fork(a,b) <--> compose(a,b)'''
     return lambda *args,**kwds: f(*[i(*args,**kwds) for i in functionList])
+
+def constf(value):
+    '''Make a function that takes anything but always returns the value given here.
+       Example:
+           f=constf(10)
+           f() -> 10
+           f(14) -> 10
+           f(1,5,a=6) -> 10'''
+    return lambda *args,**kwds: value
