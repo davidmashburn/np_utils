@@ -57,6 +57,13 @@ def removeDuplicates(l):
     seen = set()
     return [ x for x in totuple(l) if x not in seen and not seen.add(x)]
 
+def removeAdjacentDuplicates(l):
+    '''Replace any groups of items with the same value with a single occurrence instead.
+       Ex:
+       removeAdjacentDuplicates([1,2,3,0,0,1,2,0,0,1,1,1,2]) --> [1,2,3,0,1,2,0,1,2]'''
+    return [ l[i] for i in range(len(l)-1)
+                  if l[i]!=l[i+1] ] + l[-1:]
+
 def deletecases(l,cases):
     '''Delete all elements of list "cases" from list "l"'''
     if not hasattr(cases,'__iter__'):
