@@ -225,13 +225,13 @@ def applyInfix_DeepCompare(f,x,y,depth=0,xStructure=None,yStructure=None):
 
 def shallowAdd(x,y):
     return applyInfix_ShallowCompare(operator.add,x,y)
-    
+
 def shallowMul(x,y):
     return applyInfix_ShallowCompare(operator.mul,x,y)
-    
+
 def deepAdd(x,y):
     return applyInfix_DeepCompare(operator.add,x,y)
-    
+
 def deepMul(x,y):
     return applyInfix_DeepCompare(operator.mul,x,y)
 
