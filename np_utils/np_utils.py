@@ -41,8 +41,8 @@ def limitInteriorPointsInterpolating(l,numInteriorPoints):
     if l.ndim==1:
         l=l[None,:]
     return [ [ np.interp(ind, range(len(l)), i)
-               for i in l.transpose() ]
-             for ind in np.linspace(0,len(sc),numInteriorPoints+2) ]
+              for i in l.transpose() ]
+            for ind in np.linspace(0,len(sc),numInteriorPoints+2) ]
 
 def partitionNumpy(l,n):
     '''Like partition, but always clips and returns array, not list'''

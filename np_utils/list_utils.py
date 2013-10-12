@@ -84,6 +84,30 @@ def roll(l,n=1):
     else:
         return l
 
+def groupByFunction(l,f,appendFun=None):
+    '''Break up a list into groups (a dict of smaller lists) based on a
+       common property (the result of the function f applied to each element).
+       Optionally, transform the elements before appending them with appendFun.
+       
+       Examples:
+       >>> groupByFunction([1,2,3,4,5,6,7,8],lambda x:x<5)
+       {False: [5, 6, 7, 8], True: [1, 2, 3, 4]})
+       >>> groupByFunction([(1,1),(1,2),(-1,3),(-1,4)],lambda x:x[0])
+       {1: [(1, 1), (1, 2)], -1: [(-1, 3), (-1, 4)]}
+       >>> groupByFunction([(1,1),(1,2),(-1,3),(-1,4)],lambda x:x[0],lambda x:x[1])
+       {1: [1, 2], -1: [3, 4]}
+       
+       where obviously the lambdas in the last 2 examples could be
+       replaced with calls to operator.itemgetter instead
+       
+       This method is based on an example given for collections.defaultdict in:
+       http://docs.python.org/2/library/collections.html
+       '''
+    groupDict = {}
+    for i in l:
+        groupDict.setdefault(f(i),[]).append(appendFun(i) if appendFun else i)
+    return groupDict
+
 def interp(l,index):
     '''Basically floating point indexing with interpolation in between.'''
     m = index % 1
