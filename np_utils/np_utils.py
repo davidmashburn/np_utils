@@ -35,14 +35,15 @@ def limitInteriorPoints(l,numInteriorPoints,uniqueOnly=True):
         inds = np.unique(inds)
     return [ l[i] for i in inds ]
 
-def limitInteriorPointsInterpolating(l,numInteriorPoints):
-    '''Like limitInteriorPoints, but interpolates evenly instead; this also means it never clips'''
-    l=np.array(l)
-    if l.ndim==1:
-        l=l[None,:]
-    return [ [ np.interp(ind, range(len(l)), i)
-              for i in l.transpose() ]
-            for ind in np.linspace(0,len(sc),numInteriorPoints+2) ]
+# The active version of this function is defined below (this version is broken/ possibly never finished?)
+#def limitInteriorPointsInterpolatingBAD(l,numInteriorPoints):
+#    '''Like limitInteriorPoints, but interpolates evenly instead; this also means it never clips'''
+#    l=np.array(l)
+#    if l.ndim==1:
+#        l=l[None,:]
+#    return [ [ np.interp(ind, range(len(l)), i)
+#              for i in l.transpose() ]
+#            for ind in np.linspace(0,len(sc),numInteriorPoints+2) ]
 
 def partitionNumpy(l,n):
     '''Like partition, but always clips and returns array, not list'''
