@@ -108,6 +108,36 @@ def groupByFunction(l,f,appendFun=None):
         groupDict.setdefault(f(i),[]).append(appendFun(i) if appendFun else i)
     return groupDict
 
+def getElementConnections(connectionSets):
+    '''Take a list of connections and return a dictionary of connections to each element.
+       Examples:
+       >>> getElementConnections([[1,2],[4,5],[2,6]]):
+       {1:[2], 2:[1,6], 4:[5], 5:[4], 6:[2]}
+       >>> getElementConnections([[1,2],[2,3,4]]):
+       {1:[2], 2:[1,3,4], 3:[2,4], 4:[2,3]}
+       
+       connectionSets must be a nested structure with a depth of 2 (i.e. a list-of-lists)
+       and all elements must be immutables (for use in a set)'''
+    # Algorithm summary:
+    # Form a master list of elements (and make them keys to the dictionary)
+    # For any given element, get the connection sets that contain the element
+    #   and distill down unique connections from these
+    return { k:sorted( set(flatten( i for i in connectionSets
+                                      if k in i )).difference([k]) )
+            for k in sorted(set(flatten(connectionSets))) }
+
+    # Equivalent but more complex version
+    # Speed is similar; better under some circumstances, worse under others
+    ##keys = sorted(set(flatten(connectionSets)))
+    ##d = { k:set() for k in keys }
+    ##for c in connectionSets:
+    ##    cs = sorted(set(c))
+    ##    for e in cs:
+    ##        d[e].update(deletecases(cs,e))
+    ##for k,v in d.iteritems():
+    ##    d[k] = sorted(v)
+    ##return d
+
 def interp(l,index):
     '''Basically floating point indexing with interpolation in between.'''
     m = index % 1
