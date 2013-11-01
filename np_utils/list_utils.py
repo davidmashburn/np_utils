@@ -84,6 +84,15 @@ def roll(l,n=1):
     else:
         return l
 
+def zipIntoPairs(l,cycle=False,offset=1):
+    '''Form all adjacent pairs from a list
+       If cycle is True, pair the end and beginning as well
+       If offset is greater than 1, pair separated elements'''
+    if cycle:
+        return zip(l,roll(l,-offset))
+    else:
+        return zip(l[:-offset],l[offset:])
+
 def groupByFunction(l,f,appendFun=None):
     '''Break up a list into groups (a dict of smaller lists) based on a
        common property (the result of the function f applied to each element).
