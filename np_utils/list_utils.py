@@ -147,6 +147,42 @@ def getElementConnections(connectionSets):
     ##    d[k] = sorted(v)
     ##return d
 
+def _firstOrOther(l,other=None):
+    '''Helper function for getChainsFromConnections
+       Returns the first element if it exists and if not,
+         returns "other" (default None)'''
+    return l[0] if len(l) else other
+
+def getChainsFromConnections(connections,checkConnections=True):
+    '''Take a list of connections and return a list of connection chains
+       connections is a dictionary of connections between elements (which must be hashable)
+         and can be generated using getElementConnections
+       The checkConnections option tests that there is only one one path
+         through each point (aka 2 or fewer connections, no branching)
+       Returns a list of chains (lists of elements)
+       '''
+    connections = deepcopy(connections) # Protect the input from modification
+    if checkConnections: # Check that there is no branching
+        assert all( len(v)<3 for k,v in connections.iteritems() ), 'Aborting; this network has branching'
+    
+    chains = []
+    while len(connections): # loop over possible chains
+        # Pick a starting point (an end point if possible)
+        currPt = _firstOrOther( [ pt for pt,conn in connections.iteritems()
+                                     if len(conn)==1 ],
+                                connections.keys()[0] )
+        # Form a chain and move the current point forward
+        chain = [currPt]
+        currPt = connections.pop(currPt)[0]
+        while currPt: # loop to fill a chain, stop on an invalid
+            chain.append(currPt)
+            if len(connections)==0:
+                break
+            connections[currPt] = deletecases(connections[currPt], [chain[-2]])
+            currPt = _firstOrOther(connections.pop(currPt,[]))
+        chains.append(chain)
+    return chains
+
 def interp(l,index):
     '''Basically floating point indexing with interpolation in between.'''
     m = index % 1
