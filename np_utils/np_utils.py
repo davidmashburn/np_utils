@@ -285,22 +285,43 @@ def polyArea(points):
        Algorithm adapted from Darius Bacon's post:
        http://stackoverflow.com/questions/451426/how-do-i-calculate-the-surface-area-of-a-2d-polygon
        Updated to a numpy equivalent for speed'''
-    x0,y0 = np.array(points).T # force to numpy array and transpose
-    x1,y1 = np.roll(points,-1,axis=0).T
-    return 0.5*np.abs(np.sum( x0*y1 - x1*y0 ))
+    # Get all pairs of points in (x0,x1),(y0,y1) format
+    # Then compute the area as half the abs value of the sum of the cross product
+    xPairs,yPairs = np.transpose([points,np.roll(points,-1,axis=0)])
+    return 0.5 * np.abs(np.sum(np.cross(xPairs,yPairs)))
+    
+    # Old version
+    #x0,y0 = np.array(points).T # force to numpy array and transpose
+    #x1,y1 = np.roll(points,-1,axis=0).T
+    #return 0.5*np.abs(np.sum( x0*y1 - x1*y0 ))
     
     # Non-numpy version:
     #return 0.5*abs(sum( x0*y1 - x1*y0
     #                   for ((x0, y0), (x1, y1)) in zip(points, roll(points)) ))
 
+def polyCirculationDirection(points):
+    '''This algorithm calculates the overall circulation direction of the points in a polygon.
+       Returns 1 for counter-clockwise and -1 for clockwise
+       Based on the above implementation of polyArea
+         (circulation direction is just the sign of the signed area)'''
+    xPairs,yPairs = np.transpose([points,np.roll(points,-1,axis=0)])
+    return np.sign(np.sum(np.cross(xPairs,yPairs)))
+
 def polyCentroid(points):
     '''Compute the centroid of a generic 2D polygon'''
-    x0,y0 = np.array(points).T # force to numpy array and transpose
-    x1,y1 = np.roll(x0,-1), np.roll(y0,-1)     # roll to get the following values
-    c = x0*y1-x1*y0                            # the cross-term
-    area6 = 3.*np.sum(c)                       # 6*area
-    x,y = np.sum((x0+x1)*c), np.sum((y0+y1)*c) # compute the main centroid calculation
-    return x/area6, y/area6
+    xyPairs = np.transpose([points,np.roll(points,-1,axis=0)]) # in (x0,x1),(y0,y1) format
+    c = np.cross(*xyPairs)
+    xySum = np.sum(xyPairs,axis=2) # (x0+x1),(y0+y1)
+    xc,yc = np.sum( xySum*c, axis=1 )/(3.*np.sum(c))
+    return xc,yc
+    
+    # Old version
+    #x0,y0 = np.array(points).T # force to numpy array and transpose
+    #x1,y1 = np.roll(x0,-1), np.roll(y0,-1)     # roll to get the following values
+    #c = x0*y1-x1*y0                            # the cross-term
+    #area6 = 3.*np.sum(c)                       # 6*area
+    #x,y = np.sum((x0+x1)*c), np.sum((y0+y1)*c) # compute the main centroid calculation
+    #return x/area6, y/area6
     
     # Non-numpy version:
     #x = sum( (x0+x1)*(x0*y1-x1*y0)

@@ -21,6 +21,7 @@ Most notably:
     
     There are other functions here as well, but these are the most useful/novel'''
 
+from copy import deepcopy
 import operator
 
 ###############################
