@@ -157,6 +157,7 @@ def interpolatePlane(arr,floatIndex,axis=0):
     indp1Plane = (arr[slicer+(ind+1,)] if ind+1<arr.shape[axis] else 0)
     plane = indPlane*(1-rem) + indp1Plane*rem
     return plane
+
 def interpolateSumBelowAbove(arr,floatIndex,axis=0):
     '''For any given index, interpolate the sum below and above this value'''
     assert axis<len(arr.shape),'Not enough dimensions in the array'
@@ -177,6 +178,22 @@ def limitInteriorPointsInterpolating(l,numInteriorPoints):
     l=np.array(l)
     return [ interpNumpy(l,ind)
             for ind in np.linspace(0,len(l)-1,numInteriorPoints+2) ]
+
+def getValuesAroundPointInArray(arr,point,wrapX=False,wrapY=False):
+    '''Given any junction in a 2D array, get the set of unique values that surround it:
+       Junctions always have 4 pixels around them, and there is one more junction
+          in each direction than there are pixels (but one less internal junction)
+       The "point" arguments must be an internal junction unless wrapX / wrapY
+          are specified; returns None otherwise.'''
+    s = arr.shape
+    x,y = point
+    xi,xf = ( (x-1,x) if not wrapX else ((x-1)%s[0],x%s[0]) )
+    yi,yf = ( (y-1,y) if not wrapY else ((y-1)%s[1],y%s[1]) )
+    if ( 0<x<s[0] or wrapX ) and ( 0<y<s[1] or wrapY ):
+        return np.unique( arr[([xi,xf,xi,xf],[yi,yi,yf,yf])] )
+    else:
+        print "Point must be interior to the array!"
+        return None
 
 # Thanks Wikipedia!!
 # A line-drawing algorithm by the pixel...
