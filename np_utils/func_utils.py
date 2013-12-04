@@ -52,7 +52,7 @@ def compose(*functions):
 def composem(f,g):
     '''A mapping compose function for python, i.e.:
        
-       compose(f,g)(x,y,z,...) <--> f(g(x),g(y),g(z),...)
+       composem(f,g)(x,y,z,...) <--> f(g(x),g(y),g(z),...)
        
        keyword arguments go to the g function (same as compose)'''
     return lambda *args,**kwds: f(*[g(i,**kwds) for i in args])

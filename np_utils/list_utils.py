@@ -66,7 +66,8 @@ def removeAdjacentDuplicates(l):
                   if l[i]!=l[i+1] ] + l[-1:]
 
 def deletecases(l,cases):
-    '''Delete all elements of list "cases" from list "l"'''
+    '''Delete all elements of list "cases" from list "l"
+       For large numbers of cases, pass cases as a set for speed'''
     if not hasattr(cases,'__iter__'):
         cases=[cases]
     return [ i for i in l if i not in cases ]
@@ -334,6 +335,46 @@ def deepAdd(x,y):
 
 def deepMul(x,y):
     return applyInfix_DeepCompare(operator.mul,x,y)
+
+def listAdd(x,y,matchTopDown=True):
+    '''matchTopDown=True uses ShallowCompare
+       matchTopDown=False uses DeepCompare (slower)'''
+    applyInfix = ( applyInfix_ShallowCompare if matchTopDown else
+                   applyInfix_DeepCompare )
+    return applyInfix(operator.add,x,y)
+
+def listSub(x,y,matchTopDown=True):
+    '''matchTopDown=True uses ShallowCompare
+       matchTopDown=False uses DeepCompare (slower)'''
+    applyInfix = ( applyInfix_ShallowCompare if matchTopDown else
+                   applyInfix_DeepCompare )
+    return applyInfix(operator.sub,x,y)
+
+def listMul(x,y,matchTopDown=True):
+    '''matchTopDown=True uses ShallowCompare
+       matchTopDown=False uses DeepCompare (slower)'''
+    applyInfix = ( applyInfix_ShallowCompare if matchTopDown else
+                   applyInfix_DeepCompare )
+    return applyInfix(operator.Mul,x,y)
+
+def listDiv(x,y,matchTopDown=True,useIntegerDivision=False):
+    '''matchTopDown=True uses ShallowCompare
+       matchTopDown=False uses DeepCompare (slower)
+       
+       useIntegerDivision=True uses interger division (//)
+       instead of true division'''
+    applyInfix = ( applyInfix_ShallowCompare if matchTopDown else
+                   applyInfix_DeepCompare )
+    div = ( operator.div if useIntegerDivision else
+            operator.truediv )
+    return applyInfix(div,x,y)
+
+def listIncr(x):
+    return listAdd(x,1)
+
+def listDecr(x):
+    return listAdd(x,-1)
+
 
 def interpGen(l,index):
     '''Just like interp except that it uses the generic shallowAdd and shallowMul.'''
