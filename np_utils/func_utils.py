@@ -25,6 +25,13 @@ def mapf(f):
        mapf(f)(x) <--> map(f,x)'''
     return lambda x: map(f,x)
 
+def docAppend(newFun,oldFun):
+    '''Append oldFun's docstring to the end of newFun's docstring
+       Useful for quick documentation of functional modifications'''
+    newFun.__doc__ = '\n'.join([ (newFun.__doc__ if newFun.__doc__ else ''),
+                                 '\n\n'+oldFun.func_name+':',
+                                 (oldFun.__doc__ if oldFun.__doc__ else ''), ])
+
 def convertToSingleArgFun(f):
     '''Take a function that takes multiple arguments and create a function
        that takes a single argument with multiple values'''
