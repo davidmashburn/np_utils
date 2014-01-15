@@ -212,15 +212,34 @@ def makeTuple(a):
     retVal = totuple(a)
     return ( retVal if retVal.__class__==tuple else (retVal,) )
 
-def iterToX(f,iterable):
-    '''Replace all iterables in a nested structure (list,tuple,etc...)
-       with another type "f" (actually just any function returning iterables)
-       Like totuple, but more general, also uses list comprehensions
-       instead of generators for more generality (notably sympy.Tuple)'''
+def tolist(a):
+    '''Makes lists out of nested datastructures like tuples,lists, and arrays.
+       Based on totuple.'''
     try:
-        return f(*[iterToX(f,i) for i in iterable])
-    except TypeError: # dig until we can dig no more!
+        return [ tolist(i) for i in a ]
+    except TypeError:
+        return a
+
+def iterToX(f,iterable):
+    '''Generalized version of tolist/totuple.
+       Replace all iterables in a nested structure with another type (X) using
+       the constructor function "f".
+       "f" must take an iterable as it's argument.'''
+    try:
+        return f([iterToX(f,i) for i in iterable])
+    except TypeError:
         return iterable
+
+def iterToX_splat(f,iterable):
+    '''Generalized version of tolist/totuple.
+       Replace all iterables in a nested structure with another type using
+       the constructor function "f" that takes multiple arguments.
+       "f" must take multiple arguments, like sympy.Tuple, for example.'''
+    try:
+        return f(*[iterToX_splat(f,i) for i in iterable])
+    except TypeError:
+        return iterable
+
 
 def getMaxDepth(l,depth=0):
     '''Get the maximum depth of any nested structure.
