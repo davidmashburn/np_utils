@@ -19,7 +19,7 @@ import numpy as np
 from copy import copy
 from collections import Counter
 
-from list_utils import *
+from list_utils import totuple,flatten,zipflat
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
 
