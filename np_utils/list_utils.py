@@ -195,6 +195,14 @@ def interp(l,index):
         indexB = indexA + (1 if index>=0 else -1)
         return l[indexA]*(1-m) + l[indexB]*(m)
 
+def assertSameAndCondense(l,message='List values differ!'):
+    '''Take a list of values that should all be the same, assert that this is true,
+       and then return the common value
+       This acts as a safe funnel in exploratory data processing,
+       cutting a large same-valued list down to a single value.'''
+    assert all([ i==l[0] for i in l ]),message
+    return l[0]
+
 ##########################################
 ## Some utilities for nested structures ##
 ##########################################
