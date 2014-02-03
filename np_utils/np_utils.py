@@ -51,6 +51,38 @@ def partitionNumpy(l,n):
     a.resize(len(l)//n,n)
     return a
 
+def shapeShift(arr,newShape,offset=None,fillValue=0):
+    '''Create a new array with a specified shape and element value
+       and paste another array into it with an optional offset.
+       In 2D image processing, this like changing the canvas size and
+       then moving the image in x and y.
+       
+       In the simple case of expanding the shape of an array, this is
+       equivalent to the following standard procedure:
+         newArray = zeros(shape)
+         newArray[:arr.shape[0],:arr.shape[1],...] = arr
+       
+       However, shapeShift is more flexible because it can safely
+       clip for any shape and any offset (but using it just for cropping
+       an array is more efficiently done with slicing).
+       
+       A more accurate name for this might be "copyDataToNewArray", but
+       "shapeShift" is much easier to remember (and cooler).
+       '''
+    oldArr = ( arr if hasattr(arr,'shape') else np.array(arr) )
+    newArr = np.zeros(newShape,dtype=oldArr.dtype)+fillValue
+    oldShape,newShape = np.array(oldArr.shape), np.array(newArr.shape)
+    offset = ( 0*oldShape if offset==None else np.array(offset) )
+    
+    assert len(oldShape)==len(newShape)==len(offset)
+    
+    oldStartEnd = np.transpose([ np.clip(i-offset,0,oldShape) for i in [0,newShape] ])
+    newStartEnd = np.transpose([ np.clip(i+offset,0,newShape) for i in [0,oldShape] ])
+    oldSlice = [ slice(start,end) for start,end in oldStartEnd ]
+    newSlice = [ slice(start,end) for start,end in newStartEnd ]
+    newArr[newSlice] = oldArr[oldSlice]
+    return newArr
+
 def addBorder(arr,borderValue=0,borderThickness=1,axis=None):
     '''For an ND array, create a new array with a border of specified
        value around the entire original array; optional thickness (default 1)'''
