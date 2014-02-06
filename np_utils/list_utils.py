@@ -366,23 +366,23 @@ def deepMul(x,y):
 def listAdd(x,y,matchTopDown=True):
     '''matchTopDown=True uses ShallowCompare
        matchTopDown=False uses DeepCompare (slower)'''
-    applyInfix = ( applyInfix_ShallowCompare if matchTopDown else
+    _applyInfix = ( applyInfix_ShallowCompare if matchTopDown else
                    applyInfix_DeepCompare )
-    return applyInfix(operator.add,x,y)
+    return _applyInfix(operator.add,x,y)
 
 def listSub(x,y,matchTopDown=True):
     '''matchTopDown=True uses ShallowCompare
        matchTopDown=False uses DeepCompare (slower)'''
-    applyInfix = ( applyInfix_ShallowCompare if matchTopDown else
+    _applyInfix = ( applyInfix_ShallowCompare if matchTopDown else
                    applyInfix_DeepCompare )
-    return applyInfix(operator.sub,x,y)
+    return _applyInfix(operator.sub,x,y)
 
 def listMul(x,y,matchTopDown=True):
     '''matchTopDown=True uses ShallowCompare
        matchTopDown=False uses DeepCompare (slower)'''
-    applyInfix = ( applyInfix_ShallowCompare if matchTopDown else
+    _applyInfix = ( applyInfix_ShallowCompare if matchTopDown else
                    applyInfix_DeepCompare )
-    return applyInfix(operator.Mul,x,y)
+    return _applyInfix(operator.mul,x,y)
 
 def listDiv(x,y,matchTopDown=True,useIntegerDivision=False):
     '''matchTopDown=True uses ShallowCompare
@@ -390,11 +390,11 @@ def listDiv(x,y,matchTopDown=True,useIntegerDivision=False):
        
        useIntegerDivision=True uses interger division (//)
        instead of true division'''
-    applyInfix = ( applyInfix_ShallowCompare if matchTopDown else
+    _applyInfix = ( applyInfix_ShallowCompare if matchTopDown else
                    applyInfix_DeepCompare )
-    div = ( operator.div if useIntegerDivision else
-            operator.truediv )
-    return applyInfix(div,x,y)
+    _div = ( operator.div if useIntegerDivision else
+             operator.truediv )
+    return _applyInfix(_div,x,y)
 
 def listIncr(x):
     return listAdd(x,1)
