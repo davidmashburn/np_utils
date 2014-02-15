@@ -418,23 +418,32 @@ class fancyIndexingList(list):
     '''fancyIndexingList is overloaded as "fL"
        Gives lists the magical properties of numpy arrays, but without requiring regular shapes...
        Also use it where you would convert a list to a numpy array and back again like: np.array(l)[:,3].tolist()
-       Use like: fl(ANY_LIST)[<any valid numpy slice>]
+       Use like: fL(ANY_LIST)[<any valid numpy slice>]
        Examples:
-         fl( [[1],[2,3],[4,5,6],[7,8,9,10]] )[:,0]  ->  [1, 2, 4, 7]
-         fl( [[1],[2,3],[4,5,6],[7,8,9,10]] )[2:4,0]  ->  [4, 7]
-         fl( [1,[2,3],[[4,5],[6,7]]] )[2,0,1]  ->  5
-       fl also has the extra feature of being able to use lists-within-lists when indexing
+         fL( [[1],[2,3],[4,5,6],[7,8,9,10]] )[:,0]  ->  [1, 2, 4, 7]
+         fL( [[1],[2,3],[4,5,6],[7,8,9,10]] )[2:4,0]  ->  [4, 7]
+         fL( [1,[2,3],[[4,5],[6,7]]] )[2,0,1]  ->  5
+       fL also has the extra feature of being able to use lists-within-lists when indexing
        Examples:
-         fl( [[1,7],[2,3],[4,5,6],[7,8,9,10]] )[:,(0,1)]  ->  [[1, 7], [2, 3], [4, 5], [7, 8]]
-         fl( [[1,7],[2,3],[4,5,6],[7,8,9,10]] )[(0,2),(0,1)]  ->  [[1, 7], [4, 5]]
+         fL( [[1,7],[2,3],[4,5,6],[7,8,9,10]] )[:,(0,1)]  ->  [[1, 7], [2, 3], [4, 5], [7, 8]]
+         fL( [[1,7],[2,3],[4,5,6],[7,8,9,10]] )[(0,2),(0,1)]  ->  [[1, 7], [4, 5]]
        Beware that you will need to nest lists or tuples if you only have a single index:
-         fl([1,2,3,4,5])[(1,2)] -> TypeError -- this is equivalent to fl([1,2,3,4,5])[1,2]
-         fl([1,2,3,4,5])[[1,2]] -> TypeError -- ""
-         fl([1,2,3,4,5])[(1,2),] -> [2,3]
-         fl([1,2,3,4,5])[[1,2],] -> [2,3]
-         fl([1,2,3,4,5])[((1,2),)] -> [2,3]
-         fl([1,2,3,4,5])[([1,2],)] -> [2,3]
-         fl([1,2,3,4,5])[[[1,2]]] -> [2,3]
+         fL([1,2,3,4,5])[(1,2)] -> TypeError -- this is equivalent to fl([1,2,3,4,5])[1,2]
+         fL([1,2,3,4,5])[[1,2]] -> TypeError -- ""
+         fL([1,2,3,4,5])[(1,2),] -> [2,3]
+         fL([1,2,3,4,5])[[1,2],] -> [2,3]
+         fL([1,2,3,4,5])[((1,2),)] -> [2,3]
+         fL([1,2,3,4,5])[([1,2],)] -> [2,3]
+         fL([1,2,3,4,5])[[[1,2]]] -> [2,3]
+       
+       And, fL indices can also be nested; this gives a new list which has the (0,0) element and the (2,1) element:
+         fL( [[1,7],[2,3],[4,5,6],[7,8,9,10]] )[((0,0),(2,1)),] -> [1,5]
+       And in case your head doesn't hurt by now (mine does), here is an example that combines all of the above,
+       indexing a 2x2x2x2 square list:
+         fL( [[[[1,2],[3,4]],[[5,6],[7,8]]],[[[9,10],[11,12]],[[13,14],[15,16]]]] )[:, ((0,0),(0,1),1), 1]
+          -> [[2, 4, [7,8]], [10, 12, [15,16]]]
+       This type of usage is NOT recommended, because it is so opaque and covoluted.
+       (It's actually just a consequence of the implementation.)
        '''
     def new_fL(self,*args,**kwds):
         '''Just a wrapper around the class constructor for a new instance, fancyIndexingList()'''
