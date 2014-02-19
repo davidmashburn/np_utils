@@ -66,7 +66,7 @@ def shapeShift(arr,newShape,offset=None,fillValue=0):
        clip for any shape and any offset (but using it just for cropping
        an array is more efficiently done with slicing).
        
-       A more accurate name for this might be "copyDataToNewArray", but
+       A more accurate name for this might be "copyDataToArrayOfNewSize", but
        "shapeShift" is much easier to remember (and cooler).
        '''
     oldArr = ( arr if hasattr(arr,'shape') else np.array(arr) )
@@ -387,9 +387,23 @@ def polyCentroid(points):
     #               for ((x0, y0), (x1, y1)) in zip(points, roll(points)) )
     #return _centrX(points)/area6,_centrX([p[::-1] for p in points])/area6
 
+def sqrtSumSqr(x,axis=-1):
+    '''Compute the sqrt of the sum of the squares'''
+    return np.sqrt(np.sum(np.array(x)**2,axis=axis))
+
+def sqrtMeanSqr(x,axis=-1):
+    '''Compute the sqrt of the mean of the squares (RMS)'''
+    return np.sqrt(np.mean(np.array(x)**2,axis=axis))
+
+def vectorNorm(x,axis=-1):
+    '''Normalize x by it's length (sqrt of the sum of the squares)
+       x can also be a list of vectors'''
+    return x/sqrtSumSqr(x,axis=axis)
+
 def pointDistance(point0,point1):
-    deltas = ( np.array(point1) - point0 ) **2
-    return np.sqrt(np.sum(deltas,axis=-1)).tolist()
+    '''Compute the distance between two points.
+       point0 and point1 can also be lists of points'''
+    return sqrtSumSqr( np.array(point1) - np.array(point0) ).tolist()
 
 def polyPerimeter(points,closeLoop=True):
     '''This calculates the length of a (default closed) poly-line'''
