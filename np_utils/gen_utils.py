@@ -37,6 +37,26 @@ def floatIntStringOrNone(string):
         except ValueError:
             return string
 
+######################
+## String utilities ##
+######################
+
+def multireplace(text,replpairs):
+    '''Chain multiple calls of string.replace
+       A "re"-based approach may be better for very long strings
+       and/or many replacements:
+       http://code.activestate.com/recipes/81330-single-pass-multiple-replace/'''
+    for i,o in replpairs:
+        text = text.replace(i,o)
+    return text
+
+def multiremove(text,removals):
+    '''Chain multiple calls of string.replace
+       where the second aregument is always '' '''
+    for r in removals:
+        text = text.replace(r,'')
+    return text
+
 ############################
 ## Flow control utilities ##
 ############################
