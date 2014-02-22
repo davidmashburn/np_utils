@@ -69,7 +69,7 @@ def shapeShift(arr,newShape,offset=None,fillValue=0):
        A more accurate name for this might be "copyDataToArrayOfNewSize", but
        "shapeShift" is much easier to remember (and cooler).
        '''
-    oldArr = ( arr if hasattr(arr,'shape') else np.array(arr) )
+    oldArr = np.asarray(arr)
     newArr = np.zeros(newShape,dtype=oldArr.dtype)+fillValue
     oldShape,newShape = np.array(oldArr.shape), np.array(newArr.shape)
     offset = ( 0*oldShape if offset==None else np.array(offset) )
@@ -110,8 +110,7 @@ def shape_multiply(arr,shapeMultiplier, oddOnly=False, adjustFunction=None):
     '''Works like tile except that it keeps all like elements clumped\n'''
     '''Essentially a non-interpolating multi-dimensional image up-scaler'''
     # really only 7 lines without checks...
-    if not hasattr(arr,'shape'):
-        arr=np.array(arr)
+    arr=np.asarray(arr)
     
     sh = arr.shape
     ndim = arr.ndim # dimensional depth of the array
@@ -167,7 +166,7 @@ def interpNumpy(l,index):
        The more canonical way to this operation would be:
            np.interp(index,range(len(l)),l)
        (where l is already an array)'''
-    l = np.array(l)
+    l = np.asarray(l)
     m = index % 1
     if m==0:
         return l[index]
@@ -207,7 +206,7 @@ def interpolateSumBelowAbove(arr,floatIndex,axis=0):
 
 def limitInteriorPointsInterpolating(l,numInteriorPoints):
     '''Like limitInteriorPoints, but interpolates evenly instead; this also means it never clips'''
-    l=np.array(l)
+    l=np.asarray(l)
     return [ interpNumpy(l,ind)
             for ind in np.linspace(0,len(l)-1,numInteriorPoints+2) ]
 
@@ -280,8 +279,9 @@ def BresenhamFunction(p0,p1): # Generalization to n-dimensions
 def linearTransform( points,newRefLine,mirrored=False ):
     '''Transforms points from a (0,0) -> (1,0) reference coordinate system
        to a (x1,y1) -> (x2,y2) coordinate system.
-       Optional mirroring.'''
-    newRefLine = np.array(newRefLine)
+       "points" can also be a single point.
+       Optional mirroring with "mirrored" argument.'''
+    points,newRefLine = np.asarray(points), np.asarray(newRefLine)
     dx,dy = (newRefLine[1]-newRefLine[0])
     mir = (-1 if mirrored else 1)
     return np.dot( points, [[dx,dy],[-dy*mir,dx*mir]] ) + newRefLine[0]
@@ -289,8 +289,9 @@ def linearTransform( points,newRefLine,mirrored=False ):
 def reverseLinearTransform(points,oldRefLine,mirrored=False):
     '''Transforms points from a (x1,y1) -> (x2,y2) reference coordinate system
        to a (0,0) -> (1,0) coordinate system.
-       Optional mirroring.'''
-    oldRefLine = np.array(oldRefLine)
+       "points" can also be a single point.
+       Optional mirroring the "mirrored" argument.'''
+    points,oldRefLine = np.asarray(points), np.asarray(oldRefLine)
     dx,dy = (oldRefLine[1]-oldRefLine[0])
     points = (points - oldRefLine[0])
     mir = (-1 if mirrored else 1)
@@ -306,8 +307,8 @@ def FindOptimalScaleAndTranslationBetweenPointsAndReference(points,pointsRef):
        
        return the transformation parameters: a,(x0,y0,...)'''
     # Force to array of floats:
-    points = np.array(points,dtype=np.float)
-    pointsRef = np.array(pointsRef,dtype=np.float)
+    points = np.asarray(points,dtype=np.float)
+    pointsRef = np.asarray(pointsRef,dtype=np.float)
 
     # Compute some means:
     pm     = points.mean(axis=0)
@@ -387,23 +388,31 @@ def polyCentroid(points):
     #               for ((x0, y0), (x1, y1)) in zip(points, roll(points)) )
     #return _centrX(points)/area6,_centrX([p[::-1] for p in points])/area6
 
+def diffmean(x,*args,**kwds):
+    '''Subtract off the mean from x'''
+    x = np.asarray(x)
+    return x - x.mean(*args,**kwds)
+
 def sqrtSumSqr(x,axis=-1):
     '''Compute the sqrt of the sum of the squares'''
-    return np.sqrt(np.sum(np.array(x)**2,axis=axis))
+    return np.sqrt(np.sum(np.asarray(x)**2,axis=axis))
 
 def sqrtMeanSqr(x,axis=-1):
     '''Compute the sqrt of the mean of the squares (RMS)'''
-    return np.sqrt(np.mean(np.array(x)**2,axis=axis))
+    return np.sqrt(np.mean(np.asarray(x)**2,axis=axis))
 
 def vectorNorm(x,axis=-1):
     '''Normalize x by it's length (sqrt of the sum of the squares)
        x can also be a list of vectors'''
-    return x/sqrtSumSqr(x,axis=axis)
+    x = np.asarray(x)
+    sh = list(x.shape)
+    sh[axis]=1
+    return x/sqrtSumSqr(x,axis=axis).reshape(sh)
 
 def pointDistance(point0,point1):
     '''Compute the distance between two points.
        point0 and point1 can also be lists of points'''
-    return sqrtSumSqr( np.array(point1) - np.array(point0) ).tolist()
+    return sqrtSumSqr(np.asarray(point1)-np.asarray(point0))
 
 def polyPerimeter(points,closeLoop=True):
     '''This calculates the length of a (default closed) poly-line'''
