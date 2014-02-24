@@ -14,6 +14,8 @@ Flow control utilities:
                         using callFunctionIfNotNone
 '''
 
+import re
+
 ##########################
 ## Conversion utilities ##
 ##########################
@@ -41,7 +43,13 @@ def floatIntStringOrNone(string):
 ## String utilities ##
 ######################
 
-def multireplace(text,replpairs):
+def multisplit(string, *delimiters):
+    '''Split a string at any of a number of delimeters.
+       With one delimeter, this is equivalent to string.split.'''
+    pattern = '|'.join(map(re.escape, delimiters))
+    return re.split(pattern, string)
+
+def multireplace(text, *replpairs):
     '''Chain multiple calls of string.replace
        A "re"-based approach may be better for very long strings
        and/or many replacements:
@@ -50,7 +58,7 @@ def multireplace(text,replpairs):
         text = text.replace(i,o)
     return text
 
-def multiremove(text,removals):
+def multiremove(text, *removals):
     '''Chain multiple calls of string.replace
        where the second aregument is always '' '''
     for r in removals:
