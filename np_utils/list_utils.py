@@ -104,6 +104,25 @@ def ziptranspose(l):
        (This is just a wrapper around zip(*l))'''
     return zip(*l)
 
+def intersperse(l,separator):
+    '''Intersperse a separator between all items
+       
+       Example:
+       >>> interperse([1,2,3,4],42)
+       [1,42,2,42,3,42,4]
+       
+       Works by zipping together the list and a list of separators, then
+       flattening the result and clipping off the end:
+         flatten(zip( l, [sep]*len(l) ))[:-1]
+       
+       With itertools, this could be written as the longer (but ~3x faster):
+         list(islice(chain(*izip( l, [sep]*len(l) )),0,2*len(l)-1))
+       
+       This horrific list comprehension is also faster:
+         [ k for j in izip( l, [sep]*len(l) ) for k in j ][:-1]'''
+    
+    return flatten(zip( l, [separator]*len(l) ))[:-1]
+
 def removeDuplicates(l):
     '''Order preserving duplicate removal.
        Automatically converts lists and arrays (which are unhashable) to nested tuples.
