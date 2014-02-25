@@ -23,6 +23,53 @@ Most notably:
 
 from copy import deepcopy
 import operator
+from itertools import izip
+
+#################################
+## Nested structure conversion ##
+#################################
+
+def totuple(a):
+    '''Makes tuples out of nested datastructures like lists and arrays.
+       Authored by Bi Rico, http://stackoverflow.com/questions/10016352/convert-numpy-array-to-tuple'''
+    try:
+        return tuple(totuple(i) for i in a)
+    except TypeError: # dig until we can dig no more!
+        return a
+
+def makeTuple(a):
+    '''Like totuple, but ensures that you get a tuple out.'''
+    retVal = totuple(a)
+    return ( retVal if retVal.__class__==tuple else (retVal,) )
+
+def tolist(a):
+    '''Makes lists out of nested datastructures like tuples,lists, and arrays.
+       Based on totuple.'''
+    try:
+        return [ tolist(i) for i in a ]
+    except TypeError:
+        return a
+
+def iterToX(f,iterable):
+    '''Generalized version of tolist/totuple.
+       Replace all iterables in a nested structure with another type (X) using
+       the constructor function "f".
+       "f" must take an iterable as it's argument.'''
+    try:
+        return f([iterToX(f,i) for i in iterable])
+    except TypeError:
+        return iterable
+
+def iterToX_splat(f,iterable):
+    '''Generalized version of tolist/totuple.
+       Replace all iterables in a nested structure with another type using
+       the constructor function "f" that takes multiple arguments.
+       "f" must take multiple arguments, like sympy.Tuple, for example.'''
+    try:
+        return f(*[iterToX_splat(f,i) for i in iterable])
+    except TypeError:
+        return iterable
+
 
 ###############################
 ## Some basic list utilities ##
@@ -34,9 +81,13 @@ def flatten(l,repetitions=1):
        Use like: flatten(aList,3)
        
        Another (nominally faster) version of this is: [ l for i in aList for j in i for k in j for l in k ]
-       but it's unable to deal with jagged arrays...
+       but it's unable to deal with jagged arrays.
        
-       A terse but slower version of flatten (1 repetition) can also be acheived with: sum(aList,[])'''
+       A terse but slower version of flatten (1 repetition) can also be acheived with: sum(aList,[])
+       
+       An even faster version of flatten (1 repetition, non-jagged arrays)
+       can be acheived with itertools.chain: list(chain(*l))
+       '''
     retVal = l
     for i in range(repetitions):
         gen = ( ( k if hasattr(k,'__iter__') else [k] ) for k in retVal ) # Makes the function able to deal with jagged arrays as well
@@ -44,19 +95,23 @@ def flatten(l,repetitions=1):
     return retVal
 
 def zipflat(*args):
-    '''Like zip, but flattens the result'''
-    return [j for i in zip(*args) for j in i]
+    '''Like zip, but flattens the result.
+       (itertools.izip is used internally for speed/memory usage)'''
+    return [j for i in izip(*args) for j in i]
 
 def ziptranspose(l):
     '''Tranpose the two outer dimensions of a nest list
-       ( This is just a wrapper around zip(*l) )'''
+       (This is just a wrapper around zip(*l))'''
     return zip(*l)
 
 def removeDuplicates(l):
-    '''Order preserving duplicate removal... automatically converts lists and arrays (which are unhashable) to nested tuples.
-       Modified version of code found here: http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order'''
+    '''Order preserving duplicate removal.
+       Automatically converts lists and arrays (which are unhashable) to nested tuples.
+       Modified version of code found here:
+       http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order'''
     seen = set()
-    return [ x for x in totuple(l) if x not in seen and not seen.add(x)]
+    return [ x for x in totuple(l)
+               if x not in seen and not seen.add(x) ]
 
 def removeAdjacentDuplicates(l):
     '''Replace any groups of items with the same value with a single occurrence instead.
@@ -113,6 +168,15 @@ def groupByFunction(l,f,appendFun=None):
        
        This method is based on an example given for collections.defaultdict in:
        http://docs.python.org/2/library/collections.html
+       
+       Another simple way to acheive this would be using itertools.groupby:
+       
+       from itertools import groupby, imap
+       if appendFun==None:
+           return { k:list(v) for k,v in groupby(l,f) }
+        else:
+            return { k:list(imap(appendFun,v)) for k,v in groupby(l,f) }
+        I may change this in a future version after testing it more.
        '''
     groupDict = {}
     for i in l:
@@ -206,48 +270,6 @@ def assertSameAndCondense(l,message='List values differ!'):
 ##########################################
 ## Some utilities for nested structures ##
 ##########################################
-
-def totuple(a):
-    '''Makes tuples out of nested datastructures like lists and arrays.
-       Authored by Bi Rico, http://stackoverflow.com/questions/10016352/convert-numpy-array-to-tuple'''
-    try:
-        return tuple(totuple(i) for i in a)
-    except TypeError: # dig until we can dig no more!
-        return a
-
-def makeTuple(a):
-    '''Like totuple, but ensures that you get a tuple out.'''
-    retVal = totuple(a)
-    return ( retVal if retVal.__class__==tuple else (retVal,) )
-
-def tolist(a):
-    '''Makes lists out of nested datastructures like tuples,lists, and arrays.
-       Based on totuple.'''
-    try:
-        return [ tolist(i) for i in a ]
-    except TypeError:
-        return a
-
-def iterToX(f,iterable):
-    '''Generalized version of tolist/totuple.
-       Replace all iterables in a nested structure with another type (X) using
-       the constructor function "f".
-       "f" must take an iterable as it's argument.'''
-    try:
-        return f([iterToX(f,i) for i in iterable])
-    except TypeError:
-        return iterable
-
-def iterToX_splat(f,iterable):
-    '''Generalized version of tolist/totuple.
-       Replace all iterables in a nested structure with another type using
-       the constructor function "f" that takes multiple arguments.
-       "f" must take multiple arguments, like sympy.Tuple, for example.'''
-    try:
-        return f(*[iterToX_splat(f,i) for i in iterable])
-    except TypeError:
-        return iterable
-
 
 def getMaxDepth(l,depth=0):
     '''Get the maximum depth of any nested structure.
