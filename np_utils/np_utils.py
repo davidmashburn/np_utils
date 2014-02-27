@@ -107,8 +107,8 @@ def addBorder(arr,borderValue=0,borderThickness=1,axis=None):
     return arrNew
 
 def shape_multiply(arr,shapeMultiplier, oddOnly=False, adjustFunction=None):
-    '''Works like tile except that it keeps all like elements clumped\n'''
-    '''Essentially a non-interpolating multi-dimensional image up-scaler'''
+    '''Works like tile except that it keeps all like elements clumped
+       Essentially a non-interpolating, multi-dimensional image up-scaler'''
     # really only 7 lines without checks...
     arr=np.asarray(arr)
     
