@@ -25,6 +25,39 @@ def mapf(f):
        mapf(f)(x) <--> map(f,x)'''
     return lambda x: map(f,x)
 
+def kwdPop(kwds,key,defaultValue):
+    '''If a dictionary has a key, pop the value and return it,
+       otherwise return defaultValue.
+       
+       Allows treating missing kwd arguments as having a default value.
+       Lets functions that modify **kwds arguments before passing
+       them to another function to still have easy default values.
+       
+       If you use this, always document the behavior in the docstring.
+       
+       Examples:
+       
+       def f(*args,**kwds):
+           """Has g's default parameters plus two additional kwd args:
+              offset=0
+              scale=1"""
+           offset = kwdPop(kwds,'offset',0)
+           scale = kwdPop(kwds,'scale',1)
+           return scale*g(*args,**kwds) + offset
+       
+       def GetSwallowAirSpeed(*args,**kwds):
+           """Calls AfricanAirSpeed or EuropeanAirSpeed with *args and **kwds
+              Has an additional keyword argument:
+                 swallowType = 'African'
+              """
+           swallowType = kwdPop(kwds,'swallowType','African')
+           if swallowType=='African':
+               return AfricanAirSpeed(*args,**kwds)
+           else:
+               return EuropeanAirSpeed(*args,**kwds)
+       '''
+    return ( kwds.pop(key) if key in kwds else defaultValue )
+
 def docAppend(newFun,oldFun):
     '''Append oldFun's docstring to the end of newFun's docstring
        Useful for quick documentation of functional modifications'''
