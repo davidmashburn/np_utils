@@ -542,14 +542,17 @@ class fancyIndexingListM1(fancyIndexingList):
         return list.__getitem__(self,self.m1gen(index)) # for a single index, use list's default indexing
 fLm1 = fancyIndexingListM1
 
-def genericIndex(l,start=None,stop=None,step=None,includeStop=False,oneBased=False,checkBounds=False):
-    '''A generic version of basic slice-style indexing supporting:
+def genericSlice(length,start=None,stop=None,step=None,includeStop=False,oneBased=False,checkBounds=False):
+    '''A generic version of "slice" supporting:
        * dropping or keeping the stop value
        * 0-based and 1-based indexing
        * optional bounds checking
-       * +/- indexing
-       Failure results in a None value at the moment'''
-    length=len(l)
+       * +/-/None indexes (as usual)
+       
+       Requires the length of the list that will be sliced.
+       
+       Returns a slice object.
+       (failure results in a None value at the moment)'''
     maxStop = (length-1 if includeStop else length)
     
     # Always fail if step is 0
@@ -612,4 +615,4 @@ def genericIndex(l,start=None,stop=None,step=None,includeStop=False,oneBased=Fal
         if stop<0:
             stop=None
     
-    return l[start:stop:step]
+    return slice(start,stop,step)
