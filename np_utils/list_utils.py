@@ -611,8 +611,8 @@ def genericSlice(length,start=None,stop=None,step=None,includeStop=False,oneBase
         # Add the sign of the step to the stop
         stop += (1 if step>0 else -1)
         
-        # If this made stop negative, set it to None avoid wrap-around
-        if stop<0:
-            stop=None
+    # If this made stop negative, set it to None avoid wrap-around
+    if stop<0:
+        stop=None
     
     return slice(start,stop,step)
