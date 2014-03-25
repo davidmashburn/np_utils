@@ -541,3 +541,75 @@ class fancyIndexingListM1(fancyIndexingList):
         '''Just a wrapper around list.__getitem__(), but subtracts 1 from index'''
         return list.__getitem__(self,self.m1gen(index)) # for a single index, use list's default indexing
 fLm1 = fancyIndexingListM1
+
+def genericIndex(l,start=None,stop=None,step=None,includeStop=False,oneBased=False,checkBounds=False):
+    '''A generic version of basic slice-style indexing supporting:
+       * dropping or keeping the stop value
+       * 0-based and 1-based indexing
+       * optional bounds checking
+       * +/- indexing
+       Failure results in a None value at the moment'''
+    length=len(l)
+    maxStop = (length-1 if includeStop else length)
+    
+    # Always fail if step is 0
+    if step==0:
+        return None
+    
+    # Fail on 0-values in 1-based indexing when checking bounds
+    if checkBounds and oneBased and (start==0 or stop==0):
+        return None
+    
+    # Wrap negative values to positive ones and then convert from
+    # 1-based to 0-based indexing
+    if start!=None:
+        if start<0:
+            start += length
+        elif oneBased:
+            start -=1
+    if stop!=None:
+        if stop<0:
+            stop += length
+        elif oneBased:
+            stop -=1
+    
+    # If either value goes negative and we are not checking bounds,
+    # then set it to None avoid wrap-around
+    if not checkBounds:
+        if start<0:
+            start=None
+        if stop<0:
+            stop=None
+    
+    # Handle all the None cases
+    if step==None:
+        step=1
+    if step>0:
+        if start==None:
+            start = 0
+        if stop==None:
+            stop = maxStop
+    else:
+        if start==None:
+            start = length-1
+        if stop==None:
+            stop = (0 if includeStop else -1)
+    
+    # Fail on out-of-bounds if checkBounds is specified (still somewhat lenient)
+    if checkBounds:
+        if ( not 0<=start<length or
+             not 0<=stop<length or
+             step>0 and start-stop>1 or
+             step<0 and stop-start>1 ):
+            return None
+    
+    # Increment (or decrement) the stop value to include it
+    if includeStop:
+        # Add the sign of the step to the stop
+        stop += (1 if step>0 else -1)
+        
+        # If this made stop negative, set it to None avoid wrap-around
+        if stop<0:
+            stop=None
+    
+    return l[start:stop:step]
