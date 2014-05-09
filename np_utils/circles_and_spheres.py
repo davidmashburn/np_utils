@@ -4,6 +4,6 @@ Relatively negligible amount of memory (364450 total points, about 3MB on a 64-b
 
 from np_utils import ImageCircle,ImageSphere
 
-circs = [ImageCircle(i) for i in range(1,100)]
-shprs = [ImageSphere(i) for i in range(1,20)]
+circs = [None]+[ImageCircle(i) for i in range(1,100)]
+shprs = [None]+[ImageSphere(i) for i in range(1,20)]
 
