@@ -29,3 +29,6 @@ def addNoise(points,scales=1,dist='gaussian'):
     noisyPoints = np.array(points)
     noisyPoints += scales * fun(*noisyPoints.shape)
     return noisyPoints
+
+def pearson(x,y):
+    return np.corrcoef(x,y)[0,1]
