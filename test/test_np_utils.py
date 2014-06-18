@@ -8,6 +8,33 @@ from collections import Counter
 import np_utils
 from np_utils import *
 
+def test_haselement_1A():
+    assert haselement([1,2,3,4,1,2,3,5],3)
+
+def test_haselement_1B():
+    assert not haselement([1,2,3,4,1,2,3,5],6)
+
+def test_haselement_1C():
+    assert not haselement([1,2,3,4,1,2,3,5],[3])
+
+def test_haselement_2A():
+    assert haselement([[1,2,3,4],[1,2,3,5]],[1,2,3,4])
+
+def test_haselement_2B():
+    assert not haselement([[1,2,3,4],[1,2,3,5]],[1,2,3,6])
+
+def test_haselement_2C():
+    assert not haselement([[1,2,3,4],[1,2,3,5]],[1,2,3])
+
+def test_haselement_3A():
+    assert haselement([[[1,2,3,4]],[[1,2,3,5]]],[[1,2,3,4]])
+
+def test_haselement_3B():
+    assert not haselement([[[1,2,3,4]],[[1,2,3,5]]],[[1,2,3,4],[1,2,3,5]])
+
+def test_element_of_3D():
+    assert not haselement( [[[1,2,3,4],[5,6,7,8]],[[1,2,3,5],[10,12,14,15]]], [[1,2,3,4],[10,12,14,15]] )
+
 def test_addBorder_0():
     v = [[[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
          [[0, 0, 0], [0, 2, 0], [0, 2, 0], [0, 2, 0], [0, 0, 0]],
@@ -128,7 +155,7 @@ def test_pointDistance_A():
     assert pointDistance([0,0],[-12,5])==13
 
 def test_pointDistance_B():
-    assert pointDistance([[2,0],[1,1]],[[2,1],[4,5]])==[1,5]
+    assert np.all( pointDistance([[2,0],[1,1]],[[2,1],[4,5]])==[1,5] )
 
 def test_polyPerimeter_closeLoop():
     assert polyPerimeter([[0,0],[0,5],[8,11],[0,11]])==34

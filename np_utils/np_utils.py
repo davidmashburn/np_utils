@@ -23,6 +23,20 @@ from list_utils import totuple,flatten,zipflat
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
 
+def haselement(arr,subarr):
+    '''Test if subarr is equal to one of the elements of arr.
+       This is the equivalent of the "in" operator when using lists instead of arrays.'''
+    arr = np.asarray(arr)
+    subarr = np.asarray(subarr)
+    if subarr.shape!=arr.shape[1:]:
+        return False
+    elif arr.ndim<2:
+        return (subarr==arr).any()
+    else:
+        boolArr = (subarr==arr)
+        boolArr.resize([arr.shape[0],np.prod(arr.shape[1:])])
+        return boolArr.all(axis=1).any()
+
 def multidot(*args):
     '''Multiply multiple arguments with np.dot:
        reduce(np.dot,args,1)'''
