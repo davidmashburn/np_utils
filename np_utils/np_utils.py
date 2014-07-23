@@ -537,12 +537,17 @@ def GetDirectionsOfSteepestSlope_BorderCheckingVersion(borderPts):
         maxSlopeDim.append( _getMostCommonVal(dimsOfGreatestExtent) )
     return maxSlopeDim
 
-def BresenhamTriangle(p0,p1,p2): # Generalization for triangle
+def BresenhamTriangle(p0,p1,p2,doubleScan=True): # Generalization for triangle
     '''Bresenham N-D triangle rasterization
-       Uses Bresenham N-D lines to rasterize the triangle
+       Uses Bresenham N-D lines to rasterize the triangle.
        Holes are prevented by proper selection of dimensions:
            the 'scan' dimension is fixed for each line (x')
-           the 'line' dimension has the maximum slope perpendicular to iscan (y')'''
+           the 'line' dimension has the maximum slope perpendicular to iscan (y')
+       
+       Even with these precautions, diabolical cases can still have holes, so
+       the option "doubleScan" also generates the points with x' and y' swapped
+       and includes these points as well, ensuring that there are no gaps.
+       This does add computation time, so for fastest operation, set it to False.'''
     if p2==None:
         return BresenhamFunction(p0,p1) # In case the last argument is None just use a plane...
     
@@ -562,19 +567,30 @@ def BresenhamTriangle(p0,p1,p2): # Generalization for triangle
     iline = dSS[iscan]
     assert iline!=None,"iline is <flat>, that can't be right!"
     
-    #Sort the border points according to iscan (x') and then iline (y')
-    borderPtsSort = sorted( borderPts,  key = lambda x: (x[iscan],x[iline]) )
-    
-    # For each x' plane, select the two most distant points in y' to pass to the Bresenham function
-    minMaxList = []
-    for i,p in enumerate(borderPtsSort):
-        if borderPtsSort[i-1][iscan] != borderPtsSort[i][iscan]:
-            minMaxList.append([p,p]) # ensure there are always 2 points, even if they are the same
-        else:
-            minMaxList[-1][-1] = p
+    def getMinMaxList(borderPts,iscan,iline):
+        #Sort the border points according to iscan (x') and then iline (y')
+        borderPtsSort = sorted( borderPts,  key = lambda x: (x[iscan],x[iline]) )
+        
+        # For each x' plane, select the two most distant points in y' to pass to the Bresenham function
+        minMaxList = []
+        for i,p in enumerate(borderPtsSort):
+            if borderPtsSort[i-1][iscan] != borderPtsSort[i][iscan]:
+                minMaxList.append([p,p]) # ensure there are always 2 points, even if they are the same
+            else:
+                minMaxList[-1][-1] = p
+        return minMaxList
     
     # Draw Bresenham lines to rasterize the triangle (draw along y' direction for each x' value)
-    triPts = flatten([BresenhamFunction(start,end) for start,end in minMaxList ])
+    minMaxList = getMinMaxList(borderPts,iscan,iline)
+    triPts = [ i for start,end in minMaxList
+                 for i in BresenhamFunction(start,end) ]
+    
+    if doubleScan:
+        minMaxList = getMinMaxList(borderPts,iline,iscan)
+        triPts += [ i for start,end in minMaxList
+                      for i in BresenhamFunction(start,end)
+                      if i not in triPts ]
+    
     return triPts
 
 def ImageCircle(r):

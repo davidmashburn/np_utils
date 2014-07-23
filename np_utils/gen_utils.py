@@ -60,7 +60,7 @@ def multireplace(text, *replpairs):
 
 def multiremove(text, *removals):
     '''Chain multiple calls of string.replace
-       where the second aregument is always '' '''
+       where the second argument is always '' '''
     for r in removals:
         text = text.replace(r,'')
     return text
