@@ -13,7 +13,7 @@ Notably:
         draw circles and spheres (2D or 3D)
     
     The drawing functions only use integer arithmetic and return a
-    list of the coordinates that can be as array indices'''
+    list of the coordinates that can be used as array indices'''
 
 import numpy as np
 from copy import copy
