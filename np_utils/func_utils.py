@@ -75,6 +75,23 @@ def convertToMultiArgFun(f):
        and create a function that takes a multiple arguments'''
     return lambda *args,**kwds: f(args,**kwds)
 
+def tryOrNone(f,*args,**kwds):
+    '''A simplified functional form of a try/except;
+       returns None if there is an exception.
+       For a more generic verions, use "tryOrReturnException"'''
+    try:
+        return f(*args,**kwds)
+    except:
+        return None
+
+def tryOrReturnException(f,exception=Exception,*args,**kwds):
+    '''A functional form of a try/except;
+       returns None if there is an exception.'''
+    try:
+        return f(*args,**kwds)
+    except Exception,e:
+        return e
+
 def compose(*functions):
     '''A compose function for python, i.e.:
        
