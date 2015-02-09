@@ -128,7 +128,8 @@ def shape_multiply(arr,shapeMultiplier, oddOnly=False, adjustFunction=None):
     
     sh = arr.shape
     ndim = arr.ndim # dimensional depth of the array
-    shm = shapeMultiplier
+    shm = ( shapeMultiplier if hasattr(shapeMultiplier,'__len__') else
+           [shapeMultiplier] )
     
     if not len(shm)==len(arr.shape):
         print 'Length of shapeMultipler must be the same as the array shape!'
