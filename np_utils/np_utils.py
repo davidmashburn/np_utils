@@ -594,6 +594,18 @@ def BresenhamTriangle(p0,p1,p2,doubleScan=True): # Generalization for triangle
     
     return triPts
 
+def NDRectangle(start,end):
+    '''Given any two points in an ND grid, return all the points that
+       would fill an ND rectangle using these points as distant corners'''
+    start,end = [f([start,end],axis=0)     # go from small to large in each dimension
+                 for f in (np.min,np.max)]
+    nDim, nPts = len(start), np.prod(end+1-start)
+    slicelist = [slice(i,j+1) for i,j in zip(start,end)]
+    # These two ::-1's just make it so the the results are already sorted
+    # (otherwise the results are the same without them):
+    pts = np.transpose(np.mgrid[slicelist[::-1]]).reshape(nPts,nDim)[:,::-1]
+    return pts
+
 def ImageCircle(r):
     """Create a binary image of a circle radius r"""
     im = np.zeros([2*r-1]*2,dtype=np.int)
