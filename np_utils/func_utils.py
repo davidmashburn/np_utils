@@ -26,7 +26,9 @@ def mapf(f):
     return lambda x: map(f,x)
 
 def kwdPop(kwds,key,defaultValue):
-    '''If a dictionary has a key, pop the value and return it,
+    '''This is obsolete: kwds.pop(key, defaultValue) does the same thing.
+       
+       If a dictionary has a key, pop the value and return it,
        otherwise return defaultValue.
        
        Allows treating missing kwd arguments as having a default value.
@@ -56,7 +58,8 @@ def kwdPop(kwds,key,defaultValue):
            else:
                return EuropeanAirSpeed(*args,**kwds)
        '''
-    return ( kwds.pop(key) if key in kwds else defaultValue )
+    return kwds.pop(key, defaultValue)
+    #( kwds.pop(key) if key in kwds else defaultValue )
 
 def docAppend(newFun,oldFun):
     '''Append oldFun's docstring to the end of newFun's docstring
