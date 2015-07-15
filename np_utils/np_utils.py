@@ -439,16 +439,15 @@ def build_grid(center, steps, nsteps):
     '''Build a meshgrid based on:
        * a center point,
        * a step size in each dimension, and
-       * a number of steps in each dimension (must be odd!)
+       * a number of steps in each dimension
        "steps" and "nsteps" can be single numbers
        but otherwise their dimensions must match "center"
        The output will be a list of ND arrays with shape equal to nsteps'''
     steps = steps if hasattr(steps, '__iter__') else [steps] * len(center)
     nsteps = nsteps if hasattr(nsteps, '__iter__') else [nsteps] * len(center)
-    assert all(i%2==1 for i in nsteps), 'All nsteps must be odd!'
     assertSameAndCondense(map(len, (center, steps, nsteps)),
                           'All the arguments must have the same length!')
-    return np.meshgrid(*[np.arange(c-n//2*s, c+(n//2+1e-5)*s, s)
+    return np.meshgrid(*[np.linspace(c-(n-1.)/2 * s, c+(n-1.)/2 * s, n)
                          for c, s, n in zip(center, steps, nsteps)],
                        indexing='ij')
 
