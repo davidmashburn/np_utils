@@ -283,7 +283,7 @@ def assertSameAndCondense(l,message='List values differ!'):
        and then return the common value
        This acts as a safe funnel in exploratory data processing,
        cutting a large same-valued list down to a single value.'''
-    assert all([ i==l[0] for i in l ]),message
+    assert all(i==l[0] for i in l), message
     return l[0]
 
 ##########################################
