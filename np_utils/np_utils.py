@@ -19,7 +19,7 @@ import numpy as np
 from copy import copy
 from collections import Counter
 
-from list_utils import totuple,flatten,zipflat
+from list_utils import totuple, flatten, zipflat, assertSameAndCondense
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
 
@@ -434,6 +434,23 @@ def polyPerimeter(points,closeLoop=True):
     if closeLoop:
         points = np.concatenate([points,[points[0]]])
     return sum(pointDistance(points[1:],points[:-1]))
+
+def build_grid(center, steps, nsteps):
+    '''Build a meshgrid based on:
+       * a center point,
+       * a step size in each dimension, and
+       * a number of steps in each dimension (must be odd!)
+       "steps" and "nsteps" can be single numbers
+       but otherwise their dimensions must match "center"
+       The output will be a list of ND arrays with shape equal to nsteps'''
+    steps = steps if hasattr(steps, '__iter__') else [steps] * len(center)
+    nsteps = nsteps if hasattr(nsteps, '__iter__') else [nsteps] * len(center)
+    assert all(i%2==1 for i in nsteps), 'All nsteps must be odd!'
+    assertSameAndCondense(map(len, (center, steps, nsteps)),
+                          'All the arguments must have the same length!')
+    return np.meshgrid(*[np.arange(c-n//2*s, c+(n//2+1e-5)*s, s)
+                         for c, s, n in zip(center, steps, nsteps)],
+                       indexing='ij')
 
 def _getMostCommonVal(l):
     '''Get the most-occuring value in a list.

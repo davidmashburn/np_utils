@@ -178,6 +178,17 @@ def test_GetDirectionsOfSteepestSlope_D():
 def test_GetDirectionsOfSteepestSlope_E():
     assert GetDirectionsOfSteepestSlope([0,0,0],[0,1,0],[1,2,0])==[1,0,None]
 
+def test_build_grid_A():
+    assert build_grid((0.7,0.15),(10,11),(1,1)==[[[0.7]],[[0.15]]]
+
+def test_build_grid_B():
+    assert np.all(build_grid((0,0),(1,1),(3,3))==np.array([[[-1,-1,-1],[0,0,0],[1,1,1]],
+                                                           [[-1,0,1]]*3]))
+
+def test_build_grid_C():
+    assert np.all(np.isclose(build_grid((0,1),(1,4.1),(3,3)),
+                  [[[-1,-1,-1],[0,0,0],[1,1,1]],[[-3.1,1,5.1]]*3]))
+
 #Not tested yet
 #def GetDirectionsOfSteepestSlope_BorderCheckingVersion(borderPts):
 
