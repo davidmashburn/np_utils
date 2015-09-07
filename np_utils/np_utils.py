@@ -59,6 +59,14 @@ def limitInteriorPoints(l,numInteriorPoints,uniqueOnly=True):
 #              for i in l.transpose() ]
 #            for ind in np.linspace(0,len(sc),numInteriorPoints+2) ]
 
+def linrange(start, step, length):
+    '''Includes "length" points, including "start", each separated by "step".
+       (a hybrid between linspace and arange)'''
+    return start + np.arange(length) * step
+    
+#def linrange_OLD(start, step, length):
+#    return np.arange(start, start + step * (length - 0.5), step) # More efficient, but more complicated too
+
 def partitionNumpy(l,n):
     '''Like partition, but always clips and returns array, not list'''
     a=np.array(l)
