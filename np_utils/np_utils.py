@@ -42,6 +42,34 @@ def multidot(*args):
        reduce(np.dot,args,1)'''
     return reduce(np.dot,args,1)
 
+def np_groupby(keyarr, arr, f, names=None):
+    '''A really simple, relatively fast groupby for numpy arrays.
+       Takes two arrays of the same length and a function:
+         keyarr: array used to generate the groups (argument to np.unique)
+         arr: array used to compute the metric
+         f: the function that computes the metric
+       This applies f to groups of values from arr where values in keyarr are the same
+       
+       Returns a 2-column array dictionary with keys taken from the keyfun(a)
+       
+       Example use case for a record array with columns 'i' and 'j':
+           npgroupby(a['i'], a['j'], np.max)
+       In psqudo-sql, this would be:
+           select i, max(j) from a groupby i
+       
+       There are more memory and time efficient ways to do this in special
+       cases, but this is flexible for any functions and gets the job done.
+       '''
+    keys, inv = np.unique(keyarr, return_inverse=True)
+    spl = np.split(np.argsort(inv), np.cumsum(np.bincount(inv)[:-1]))
+    groups = np.fromiter((f(arr[i]) for i in spl), dtype=None, count=len(keys))
+    return np.rec.fromarrays([keys, groups], names=names)
+
+def rec_groupby(a, keyname, valname, f):
+    '''A special version of npgroupby for record arrays.
+       Not as flexible as matplotlib's rec_groupby but simpler and faster'''
+    return np_groupby(a[keyname], a[valname], f, names=[keyname, valname])
+
 def limitInteriorPoints(l,numInteriorPoints,uniqueOnly=True):
     '''return the list l with only the endpoints and a few interior points (uniqueOnly will duplicate if too few points)'''
     inds = np.linspace(0,len(l)-1,numInteriorPoints+2).round().astype(np.integer)
