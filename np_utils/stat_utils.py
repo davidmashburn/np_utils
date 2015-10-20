@@ -4,10 +4,12 @@ import numpy as np
 
 def uniformSphericalNoise(*shape):
     '''Creates a uniform distributions within the volume of a hyper-sphere.
-       (Implementats the Box-Mueller algorithm)'''
+       (Implementats the Box-Mueller algorithm)
+       
+       The last element of shape is the number of dimensions of the hyper sphere'''
     randDir = np.random.randn(*shape).T
     normNoise = (randDir/np.sqrt(np.sum(randDir**2,axis=0))).T
-    return np.random.rand(shape[0],1)**(1./shape[1])*normNoise
+    return np.random.rand(shape[0],1)**(1./shape[-1])*normNoise
 
 def _uniformCenteredNoise(*shape):
     return np.random.rand(*shape)*2-1
