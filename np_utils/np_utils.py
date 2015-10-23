@@ -101,6 +101,8 @@ def np_groupby(keyarr, arr, *functions, **kwds):
            pandas
            numpy_groupies
            matplotlib.mlab.rec_groupby
+           itertools.groupby
+           groupByFunction in the list_utils sub-package here
            np_unique + np.bincount (handle with care)
        '''
     names = kwds.pop('names', None)
