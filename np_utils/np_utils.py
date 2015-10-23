@@ -112,6 +112,12 @@ def np_groupby(keyarr, arr, *functions, **kwds):
               for f in functions]
     return np.rec.fromarrays(_split_records(keys) + groups, names=names)
 
+def _outfielder(fun, fields):
+    '''Helper function to generate a function that takes an array as the argument'''
+    def f(arr):
+        return fun(arr[fields]) # This does not work here: fields_view(arr, fields)
+    return f
+
 def rec_groupby(a, keynames, *fun_fields_name):
     '''A special version of np_groupby for record arrays, somewhat similar
        to the function found in matplotlib.mlab.rec_groupby.
@@ -135,7 +141,8 @@ def rec_groupby(a, keynames, *fun_fields_name):
        '''
     keynames = list(keynames) if islistlike(keynames) else [keynames]
     keyarr = fields_view(a, keynames)
-    functions = [lambda arr: fun(arr[fields]) # This does not work here: fields_view(arr, fields)
+    funs, fields_list, names = zip(*fun_fields_name)
+    functions = [_outfielder(fun, fields)
                  for fun, fields, name in fun_fields_name]
     names = [i[-1] for i in fun_fields_name]
     return np_groupby(keyarr, a, *functions, names=keynames + names)

@@ -70,6 +70,12 @@ def test_np_groupby_2():
 
 def test_np_groupby_3():
     a = _get_sample_rec_array()
+    g = np_groupby(a['n'], a['o'], np.max, np.min,
+                   names=['n', 'max_o', 'min_o'])
+    assert g.max_o[0] != g.min_o[0]
+
+def test_np_groupby_4():
+    a = _get_sample_rec_array()
     g = np_groupby(a[['m', 'n']], a,
                    lambda x: np.mean(x['o']),
                    lambda x: np.std(x['o']),
@@ -79,7 +85,7 @@ def test_np_groupby_3():
     assert g.dtype == [('m', '|S4'), ('n', '<i8'), ('mean_o', '<f8'),
                        ('std_o', '<f8'), ('min_p', '<f8')]
 
-def test_np_groupby_4():
+def test_np_groupby_5():
     a = _get_sample_rec_array()
     def compute_some_thing(x):
         o, p = x['o'], x['p']
@@ -91,10 +97,17 @@ def test_np_groupby_4():
 
 def test_rec_groupby_1():
     a = _get_sample_rec_array()
-    assert np.all(rec_groupby(a, 'n', (np.max, 'o', 'max_o')) == 
+    assert np.all(rec_groupby(a, 'n', (np.max, 'o', 'max_o')) ==
                   np_groupby(a['n'], a['o'], np.max, names=['n', 'max_o']))
 
 def test_rec_groupby_2():
+    a = _get_sample_rec_array()
+    assert np.all(rec_groupby(a, 'n', (np.max, 'o', 'max_o'),
+                                      (np.min, 'o', 'min_o')) ==
+                  np_groupby(a['n'], a['o'], np.max, np.min,
+                             names=['n', 'max_o', 'min_o']))
+
+def test_rec_groupby_3():
     a = _get_sample_rec_array()
     def compute_some_thing(x):
         o, p = x['o'], x['p']
