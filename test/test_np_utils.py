@@ -8,6 +8,25 @@ from collections import Counter
 import np_utils
 from np_utils import *
 
+cache = {}
+
+def _get_sample_rec_array():
+    '''Build a dummy record array to test with. Has fields m,n,o,p.
+       Cache the result as "cache['sample_recarray']" to save time.'''
+    if 'sample_recarray' in cache:
+        arr = cache['sample_recarray']
+    else:
+        l = 10000
+        ID = np.arange(l)
+        np.random.seed(0)
+        m = np.array([['This', 'That'][j] for j in np.random.randint(2, size=l)])
+        n = np.random.randint(100, size=l)
+        o = np.random.normal(loc=300, scale=100, size=l)
+        p = np.random.logistic(0, 20, size=l)
+        arr = np.rec.fromarrays([ID, m, n, o, p], names=list('imnop'))
+        cache['sample_recarray'] = arr
+    return arr
+
 def test_haselement_1A():
     assert haselement([1,2,3,4,1,2,3,5],3)
 
@@ -34,6 +53,58 @@ def test_haselement_3B():
 
 def test_element_of_3D():
     assert not haselement( [[[1,2,3,4],[5,6,7,8]],[[1,2,3,5],[10,12,14,15]]], [[1,2,3,4],[10,12,14,15]] )
+
+def test_np_groupby_1():
+    a = _get_sample_rec_array()
+    g = np_groupby(a['n'], a['o'], np.max)
+    assert g.shape == (100,)
+    assert g.dtype == [('f0', '<i8'), ('f1', '<f8')]
+    assert np.all(g['f0'] == np.arange(100))
+    assert np.all(g['f1'] > 450)
+
+def test_np_groupby_2():
+    a = _get_sample_rec_array()
+    g = np_groupby(a['n'], a['o'], np.max, names=['n', 'max_o'])
+    assert g.shape == (100,)
+    assert g.dtype == [('n', '<i8'), ('max_o', '<f8')]
+
+def test_np_groupby_3():
+    a = _get_sample_rec_array()
+    g = np_groupby(a[['m', 'n']], a,
+                   lambda x: np.mean(x['o']),
+                   lambda x: np.std(x['o']),
+                   lambda x: np.min(x['p']),
+                   names=['m', 'n', 'mean_o', 'std_o', 'min_p'])
+    assert g.shape == (200,)
+    assert g.dtype == [('m', '|S4'), ('n', '<i8'), ('mean_o', '<f8'),
+                       ('std_o', '<f8'), ('min_p', '<f8')]
+
+def test_np_groupby_4():
+    a = _get_sample_rec_array()
+    def compute_some_thing(x):
+        o, p = x['o'], x['p']
+        return np.mean(o) / np.std(o) * np.min(p)
+    g = np_groupby(a[['m', 'n']], a, compute_some_thing,
+                   names=['m', 'n', 'its_complicated'])
+    assert g.shape == (200,)
+    assert g.dtype == [('m', '|S4'), ('n', '<i8'), ('its_complicated', '<f8')]
+
+def test_rec_groupby_1():
+    a = _get_sample_rec_array()
+    assert np.all(rec_groupby(a, 'n', (np.max, 'o', 'max_o')) == 
+                  np_groupby(a['n'], a['o'], np.max, names=['n', 'max_o']))
+
+def test_rec_groupby_2():
+    a = _get_sample_rec_array()
+    def compute_some_thing(x):
+        o, p = x['o'], x['p']
+        return np.mean(o) / np.std(o) * np.min(p)
+    
+    g_r = rec_groupby(a, ['m', 'n'], (compute_some_thing, ['o', 'p'], 'its_complicated'))
+    g_n = np_groupby(a[['m', 'n']], a, compute_some_thing,
+                     names=['m', 'n', 'its_complicated'])
+    
+    assert np.all(g_r == g_n)
 
 def test_addBorder_0():
     v = [[[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],

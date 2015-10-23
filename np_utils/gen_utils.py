@@ -14,6 +14,7 @@ Flow control utilities:
                         using callFunctionIfNotNone
 '''
 
+import types
 import re
 
 ##########################
@@ -38,6 +39,10 @@ def floatIntStringOrNone(string):
             return float(string)
         except ValueError:
             return string
+
+def islistlike(x):
+    '''Test if something is an iterable but NOT as string'''
+    return hasattr(x, '__iter__') and not isinstance(x, types.StringTypes)
 
 ######################
 ## String utilities ##

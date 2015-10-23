@@ -19,6 +19,7 @@ import numpy as np
 from copy import copy
 from collections import Counter
 
+from gen_utils import islistlike
 from list_utils import totuple, flatten, zipflat, assertSameAndCondense
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
@@ -42,33 +43,100 @@ def multidot(*args):
        reduce(np.dot,args,1)'''
     return reduce(np.dot,args,1)
 
-def np_groupby(keyarr, arr, f, names=None):
+def fields_view(arr, fields):
+    '''Select fields from a record array without a copy
+       Taken from:
+       http://stackoverflow.com/questions/15182381/how-to-return-a-view-of-several-columns-in-numpy-structured-array
+       '''
+    fields = fields if islistlike(fields) else [fields]
+    newdtype = np.dtype({name: arr.dtype.fields[name] for name in fields})
+    return np.ndarray(arr.shape, newdtype, arr, 0, arr.strides)
+
+def _split_records(arr):
+    '''Split out individal arrays from records as a list of views'''
+    arr = np.asanyarray(arr)
+    if arr.dtype.names is None:
+        return [arr]
+    else:
+        return [arr[name] for name in arr.dtype.names]
+
+def np_groupby(keyarr, arr, *functions, **kwds):
     '''A really simple, relatively fast groupby for numpy arrays.
        Takes two arrays of the same length and a function:
          keyarr: array used to generate the groups (argument to np.unique)
          arr: array used to compute the metric
-         f: the function that computes the metric
+         functions: functions that computes the metrics
+         names (optional): names for each column in the resulting record array
        This applies f to groups of values from arr where values in keyarr are the same
        
        Returns a 2-column array dictionary with keys taken from the keyfun(a)
        
        Example use case for a record array with columns 'i' and 'j':
-           npgroupby(a['i'], a['j'], np.max)
+           np_groupby(a['i'], a['j'], np.max)
        In psqudo-sql, this would be:
            select i, max(j) from a groupby i
+       Multiple columns can also be used.
+       For instance, if there are fields 'm', 'n', 'o', 'p',
+       we could write:
+           np_groupby(a[['m', 'n']], a,
+                     lambda x: np.mean(x['o']),
+                     lambda x: np.std(x['o']),
+                     lambda x: np.min(x['p']),
+                     names=['m', 'n', 'mean_o', 'std_o', 'min_p'])
+       In psqudo-sql, this would be:
+           select m,n,mean(o),std(o),min(p) from a groupby m,n
+       
+       We could also easily use a compound function like this:
+           def compute_some_thing(x):
+               o, p = x['o'], x['p']
+               return np.mean(o) / np.std(o) * np.min(p)
+           np_groupby(a[['m', 'n']], a, compute_some_thing,
+                     names=['m', 'n', 'its_complicated'])
        
        There are more memory and time efficient ways to do this in special
-       cases, but this is flexible for any functions and gets the job done.
+       cases, but this is flexible for any functions and gets the job done
+       (in 4 lines).
+       
+       Other great options for groupby include:
+           pandas
+           numpy_groupies
+           matplotlib.mlab.rec_groupby
+           np_unique + np.bincount (handle with care)
        '''
+    names = kwds.pop('names', None)
     keys, inv = np.unique(keyarr, return_inverse=True)
     spl = np.split(np.argsort(inv), np.cumsum(np.bincount(inv)[:-1]))
-    groups = np.fromiter((f(arr[i]) for i in spl), dtype=None, count=len(keys))
-    return np.rec.fromarrays([keys, groups], names=names)
+    groups = [np.fromiter((f(arr[i]) for i in spl), dtype=None, count=len(keys))
+              for f in functions]
+    return np.rec.fromarrays(_split_records(keys) + groups, names=names)
 
-def rec_groupby(a, keyname, valname, f):
-    '''A special version of npgroupby for record arrays.
-       Not as flexible as matplotlib's rec_groupby but simpler and faster'''
-    return np_groupby(a[keyname], a[valname], f, names=[keyname, valname])
+def rec_groupby(a, keynames, *fun_fields_name):
+    '''A special version of np_groupby for record arrays, somewhat similar
+       to the function found in matplotlib.mlab.rec_groupby.
+       
+       This is basically a wrapper around np_groupy that automatically
+       generates lambda's like the ones in the np_groupby doc string.
+       That same call would look like this using rec_grouby:
+       
+       rec_groupby(a, ['m', 'n'], (np.mean, 'o', 'mean_o'),
+                                  (np.std, 'o', 'std_o'),
+                                  (np.min, 'p', 'min_p'))
+       and the second function could be written as:
+           def compute_some_thing(x):
+               o, p = x['o'], x['p']
+               return np.mean(o) / np.std(o) * np.min(p)
+           rec_groupby(a, ['m', 'n'],
+                       (compute_some_thing, ['o', 'p'], 'its_complicated'))
+       
+       In general, this function is faster than matplotlib.mlab, but not
+       as fast as pandas and probably misses some corner cases for each :)
+       '''
+    keynames = list(keynames) if islistlike(keynames) else [keynames]
+    keyarr = fields_view(a, keynames)
+    functions = [lambda arr: fun(arr[fields]) # This does not work here: fields_view(arr, fields)
+                 for fun, fields, name in fun_fields_name]
+    names = [i[-1] for i in fun_fields_name]
+    return np_groupby(keyarr, a, *functions, names=keynames + names)
 
 def limitInteriorPoints(l,numInteriorPoints,uniqueOnly=True):
     '''return the list l with only the endpoints and a few interior points (uniqueOnly will duplicate if too few points)'''
