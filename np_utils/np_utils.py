@@ -104,6 +104,11 @@ def np_groupby(keyarr, arr, *functions, **kwds):
            itertools.groupby
            groupByFunction in the list_utils sub-package here
            np_unique + np.bincount (handle with care)
+       
+       Adapted from multiple places, most notably:
+       http://stackoverflow.com/questions/16856470/is-there-a-matlab-accumarray-equivalent-in-numpy
+       http://stackoverflow.com/questions/8623047/group-by-max-or-min-in-a-numpy-array
+       https://github.com/matplotlib/matplotlib/blob/master/lib/matplotlib/mlab.py
        '''
     names = kwds.pop('names', None)
     keys, inv = np.unique(keyarr, return_inverse=True)
