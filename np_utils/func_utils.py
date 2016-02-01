@@ -11,6 +11,8 @@ Functions that generate functions:
     constf -> make a function that always returns the same value
 '''
 
+from functools import wraps
+
 def identity(x):
     '''Identity function; just returns the argument'''
     return x
@@ -171,3 +173,25 @@ def fork_strict(f,*functionList, **forkKwds):
        Here is the documentation for fork:
        '''+fork.__doc__
     return lambda *args,**kwds: f(*[i(*args,**kwds) for i in functionList])
+
+def doublewrap(f):
+    '''
+    a decorator decorator, allowing the decorator to be used as:
+    @decorator(with, arguments, and=kwargs)
+    or
+    @decorator
+    lifted from this StackOverflow answer:
+    http://stackoverflow.com/questions/653368/how-to-create-a-python-decorator-that-can-be-used-either-with-or-without-paramet
+    '''
+    @wraps(f)
+    def new_dec(*args, **kwargs):
+        if len(args) == 1 and len(kwargs) == 0 and callable(args[0]):
+            # actual decorated function
+            return f(args[0]) # use the basic decorator pattern
+        else:
+            # decorator arguments
+            def realf(realf):
+                return f(realf, *args, **kwargs) # use the nested decorator pattern
+            return realf
+
+    return new_dec

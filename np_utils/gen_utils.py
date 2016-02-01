@@ -32,13 +32,14 @@ def floatIntStringOrNone(string):
     '''An even more generic version of intOrFloat'''
     if string=='None':
         return None
-    try:
-        return int(string)
-    except ValueError:
+    
+    for fun in (int, long, float):
         try:
-            return float(string)
+            return fun(string)
         except ValueError:
-            return string
+            pass
+    
+    return string
 
 def islistlike(x):
     '''Test if something is an iterable but NOT as string'''

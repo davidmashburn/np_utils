@@ -152,6 +152,24 @@ def partition(l,n,clip=True):
     length = ( len(l)//n*n if clip else len(l) ) # //n*n is a clipping operation...NOT /n**2
     return [l[i:i+n] for i in range(0,length,n)]
 
+def split_list_on_condition(l, cond):
+    '''Split list "l" based on condition "cond" which can be:
+          * a function returning booleans
+          * an iterable of booleans
+          * a single boolean'''
+    if hasattr(cond, '__call__'):
+        pass
+    elif hasattr(cond, '__iter__'):
+        g = (i for i in cond)
+        cond = lambda x: g.next()
+    else:
+        cond = lambda x: cond
+    
+    true_list, false_list = [], []
+    for i in l:
+        (true_list if cond(i) else false_list).append(i)
+    return true_list, false_list
+
 def roll(l,n=1):
     '''Roll a list (like numpy.roll) -- For lists only! Uses concatenate with "+"'''
     if hasattr(l,'__iter__'):
