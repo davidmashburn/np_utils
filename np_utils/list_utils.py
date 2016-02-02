@@ -152,19 +152,34 @@ def partition(l,n,clip=True):
     length = ( len(l)//n*n if clip else len(l) ) # //n*n is a clipping operation...NOT /n**2
     return [l[i:i+n] for i in range(0,length,n)]
 
+def _function_ize(x):
+    '''Ensure that x is a function
+       When x is a function, return it
+       When x is an iterable, build a function that steps
+         through the items sequentially (using a generator)
+       When x is a non-iterable value, build a function
+         that always returns that value
+       (This really just a helper function for split_list_on_condition)'''
+    if hasattr(x, '__call__'):
+        # x is already a function
+        pass
+    elif hasattr(x, '__iter__'):
+        # x is a list of some kind, so use a generator to step through the items
+        g = (i for i in x)
+        x = lambda i: g.next()
+    else:
+        # x is a boolean value, so make a simple function
+        bool_val = x
+        x = lambda i: bool_val
+    
+    return x
+
 def split_list_on_condition(l, cond):
     '''Split list "l" based on condition "cond" which can be:
           * a function returning booleans
           * an iterable of booleans
           * a single boolean'''
-    if hasattr(cond, '__call__'):
-        pass
-    elif hasattr(cond, '__iter__'):
-        g = (i for i in cond)
-        cond = lambda x: g.next()
-    else:
-        cond = lambda x: cond
-    
+    cond = _function_ize(cond)
     true_list, false_list = [], []
     for i in l:
         (true_list if cond(i) else false_list).append(i)
