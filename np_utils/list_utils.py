@@ -75,6 +75,16 @@ def iterToX_splat(f,iterable):
 ## Some basic list utilities ##
 ###############################
 
+def listify(x):
+    '''A simple function to wrap non-lists in []'s
+       Helps in the case when arguments can optionally
+       be lists or singletons.
+       This is explicitly ONLY for lists and tuples, mostly
+       to avoid also catching strings.'''
+    return (x if isinstance(x, list) else
+            list(x) if isinstance(x, tuple) else
+            [x])
+
 def flatten(l,repetitions=1):
     '''A wrapper around the generator-based list flattener (quite fast)
        
@@ -201,6 +211,15 @@ def zipIntoPairs(l,cycle=False,offset=1):
         return zip(l,roll(l,-offset))
     else:
         return zip(l[:-offset],l[offset:])
+
+def getMostCommonVal(l):
+    '''Get the most-occuring value in a list.
+       When multiple values occur the same number of times, returns the minimum one
+       Example:
+           _getMostCommonVal([1,2,4,3,4,5,6,3,5]) -> 3'''
+    return Counter(l).most_common()[0][0]
+
+
 
 def groupByFunction(l,f,appendFun=None):
     '''Break up a list into groups (a dict of smaller lists) based on a
