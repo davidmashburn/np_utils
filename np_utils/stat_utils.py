@@ -1,6 +1,12 @@
 '''Utilities for noise generation and statistics by David Mashburn'''
+from __future__ import division
 
 import numpy as np
+
+def gaussian_pdf(x, mu=0, sig=1, use_coeff=True):
+    '''A simple function to compute value(s) from a gaussian PDF'''
+    coeff = 1 / sig / np.sqrt(2. * np.pi) if use_coeff else 1
+    return coeff * np.exp(-np.square(x - mu) / (2. * np.square(sig)))
 
 def uniformSphericalNoise(*shape):
     '''Creates a uniform distributions within the volume of a hyper-sphere.
@@ -34,3 +40,33 @@ def addNoise(points,scales=1,dist='gaussian'):
 
 def pearson(x,y):
     return np.corrcoef(x,y)[0,1]
+
+def sample_weights(weights, num=1):
+    '''Given a series of (normalized) weights,
+       return a set of N randomly sampled indices'''
+    return np.searchsorted(np.cumsum(weights), np.random.random(num))
+
+def sample_from_buckets(buckets, weights, num=1):
+    '''Given a grouping of buckets and weights, randomly select N buckets'''
+    return np.asanyarray(buckets)[sample_weights(weights, num)]
+
+def Bhattacharyya_coefficient(mu1, sig1, mu2, sig2):
+    '''Compute the Bhattacharyya coefficient between two normal distributions
+    See https://en.m.wikipedia.org/wiki/Hellinger_distance
+    
+    <math>\scriptstyle P\,\sim\,\mathcal{N}(\mu_1,\sigma_1^2)</math>
+    and
+    <math>\scriptstyle Q\,\sim\,\mathcal{N}(\mu_2,\sigma_2^2)</math> is:
+    <math>
+    BC(P, Q) = \sqrt{\frac{2\sigma_1\sigma_2}{\sigma_1^2+\sigma_2^2}} \,
+               e^{-\frac{1}{4}\frac{(\mu_1-\mu_2)^2}{\sigma_1^2+\sigma_2^2}}.
+    </math>
+    '''
+    
+    sum_sig_sqr = np.square(sig1) + np.square(sig2)
+    sigma_ratio_factor = np.sqrt(2. * sig1 * sig2 / sum_sig_sqr)
+    exponent = -np.square(mu1 - mu2) / sum_sig_sqr / 4.
+    BC = sigma_ratio_factor * np.exp(exponent)
+    return BC
+
+gaussian_similarity = Bhattacharyya_coefficient # an alias since Bhattacharyya is so hard to spell :)
