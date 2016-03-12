@@ -11,8 +11,6 @@ Notably:
     '''
 
 import numpy as np
-from copy import copy
-from collections import Counter
 
 from gen_utils import islistlike
 from list_utils import totuple, flatten, zipflat, assertSameAndCondense
@@ -32,6 +30,10 @@ def haselement(arr,subarr):
         boolArr = (subarr==arr)
         boolArr.resize([arr.shape[0],np.prod(arr.shape[1:])])
         return boolArr.all(axis=1).any()
+
+def np_has_duplicates(arr):
+    '''For a 1D array, test whether there are any duplicated elements.'''
+    return len(arr) > len(np.unique(arr))
 
 def multidot(*args):
     '''Multiply multiple arguments with np.dot:
@@ -54,6 +56,25 @@ def _split_records(arr):
         return [arr]
     else:
         return [arr[name] for name in arr.dtype.names]
+
+def get_index_groups(arr):
+    '''For a 1D array, get all unique values (keys)
+        and the locations of each value in the original array (index_groups).
+        keys and index_groups are aligned so that dict(zip(keys, index_groups))
+        creates a dictionary that maps from each unique value in arr
+        to a list of all the locations for that value.
+        index_groups can be thought of as a much more efficient variant of:
+            [np.where(arr==i) for i in np.unique(arr)]
+        A simple count can be achieved by:
+            keys, index_groups = get_index_groups(arr)
+            counts = map(len, index_groups)
+        which would be equivalent to this pseudo-sql:
+            select count(x) from arr group by x
+        '''
+    keys, inv = np.unique(arr, return_inverse=True)
+    split_points = np.cumsum(np.bincount(inv)[:-1])
+    index_groups = np.split(np.argsort(inv), split_points)
+    return keys, index_groups
 
 def np_groupby(keyarr, arr, *functions, **kwds):
     '''A really simple, relatively fast groupby for numpy arrays.
@@ -106,9 +127,8 @@ def np_groupby(keyarr, arr, *functions, **kwds):
        https://github.com/matplotlib/matplotlib/blob/master/lib/matplotlib/mlab.py
        '''
     names = kwds.pop('names', None)
-    keys, inv = np.unique(keyarr, return_inverse=True)
-    spl = np.split(np.argsort(inv), np.cumsum(np.bincount(inv)[:-1]))
-    groups = [np.fromiter((f(arr[i]) for i in spl), dtype=None, count=len(keys))
+    keys, index_groups = get_index_groups(keyarr)
+    groups = [np.fromiter((f(arr[i]) for i in index_groups), dtype=None, count=len(keys))
               for f in functions]
     return np.rec.fromarrays(_split_records(keys) + groups, names=names)
 

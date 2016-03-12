@@ -24,6 +24,8 @@ Most notably:
 from copy import deepcopy
 import operator
 from itertools import izip
+from collections import Counter
+
 
 #################################
 ## Nested structure conversion ##
@@ -133,6 +135,10 @@ def intersperse(l,separator):
     
     return flatten(zip( l, [separator]*len(l) ))[:-1]
 
+def has_duplicates(l):
+    '''For a 1D list, test whether there are any duplicated elements.'''
+    return len(l) > len(set(l))
+
 def removeDuplicates(l):
     '''Order preserving duplicate removal.
        Automatically converts lists and arrays (which are unhashable) to nested tuples.
@@ -218,8 +224,6 @@ def getMostCommonVal(l):
        Example:
            _getMostCommonVal([1,2,4,3,4,5,6,3,5]) -> 3'''
     return Counter(l).most_common()[0][0]
-
-
 
 def groupByFunction(l,f,appendFun=None):
     '''Break up a list into groups (a dict of smaller lists) based on a
