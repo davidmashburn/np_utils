@@ -23,7 +23,7 @@ Most notably:
 
 from copy import deepcopy
 import operator
-from itertools import izip
+from itertools import izip, chain, islice
 from collections import Counter
 
 
@@ -167,6 +167,23 @@ def partition(l,n,clip=True):
        clip chops off whatever does not fit into n-sized chunks at the end'''
     length = ( len(l)//n*n if clip else len(l) ) # //n*n is a clipping operation...NOT /n**2
     return [l[i:i+n] for i in range(0,length,n)]
+
+def split_at_boundaries(l, boundaries):
+    '''Split a list at the boundaries (which must be a sorted list)
+       Endpoints are optional and will be ignored
+       This function uses itertools in the case that the '''
+    lenl = len(l)
+    boundaries = boundaries[(1 if boundaries[0] == 0 else 0):
+                            (-1 if boundaries[-1] == lenl else None)]
+    if not len(boundaries):
+        return [l]
+    
+    start_end = chain([[0, boundaries[0]]],
+                      izip(islice(boundaries, 0, lenl-1),
+                           islice(boundaries, 1, None)),
+                      [[boundaries[-1], lenl]])
+    count = len(boundaries) + 1
+    return [l[start:end] for start, end in start_end]
 
 def _function_ize(x):
     '''Ensure that x is a function

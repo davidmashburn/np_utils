@@ -13,7 +13,12 @@ def test_split_list_on_condition_3():
     manual = [0, 0, 0, 1, 0, 0, 1, 1, 1, 0]
     assert split_list_on_condition(TEST_SET, manual) == ([3, 6, 7, 8], [0, 1, 2, 4, 5, 9])
 
+def test_split_at_boundaries_1():
+    s = split_at_boundaries([1,2,3,4,5,6,7,8,9], [2,5,6])
+    assert s == [[1, 2], [3, 4, 5], [6], [7, 8, 9]]
+
 if __name__ == '__main__':
     test_split_list_on_condition_1()
     test_split_list_on_condition_2()
     test_split_list_on_condition_3()
+    test_split_at_boundaries_1()

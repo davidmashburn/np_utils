@@ -13,7 +13,7 @@ Notably:
 import numpy as np
 
 from gen_utils import islistlike
-from list_utils import totuple, flatten, zipflat, assertSameAndCondense
+from list_utils import totuple, flatten, zipflat, assertSameAndCondense, split_at_boundaries
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
 
@@ -58,6 +58,41 @@ def _split_records(arr):
         return [arr[name] for name in arr.dtype.names]
 
 def get_index_groups(arr):
+    '''For a 1D array, get all unique values (keys)
+        and the locatdions of each value in the original array (index_groups).
+        keys and index_groups are aligned so that dict(zip(keys, index_groups))
+        creates a dictionary that maps from each unique value in arr
+        to a list of all the locations for that value.
+        index_groups can be thought of as a much more efficient variant of:
+            [np.where(arr==i) for i in np.unique(arr)]
+        A simple count can be achieved by:
+            keys, index_groups = get_index_groups(arr)
+            counts = map(len, index_groups)
+        which would be equivalent to this pseudo-sql:
+            select count(x) from arr group by x
+
+    The algorithm is as follows:
+    Form a list of the unique keys
+    Replace every value in the array with an index into the unique keys (inv)
+    Argsort these indices to form the groups, split these into groups based on the boundaries
+    MORE HERE
+    These indices will then be indices for the original values as well since the locations of everything is the same
+
+We can save a calculation by storing idx which in turn comes from flag (this becomes the split_points)'''
+
+    arr = np.asanyarray(arr).flatten()          # flat version of the array
+    sort_ind = arr.argsort()#kind='mergesort')  # The indices of the array rearranged
+    sort_arr = arr[sort_ind]                    # such that arr[sort_ind] is the sorted array
+    isdiff = np.concatenate(([True], sort_arr[1:] != sort_arr[:-1]))  # True if each element is different from its lefthand neighbor, False if it is the same
+    keys = sort_arr[isdiff]                     # The unique values in the array
+    sorted_key_inds = np.cumsum(isdiff) - 1     # A list the unique value's indices in keys (so just 0-n) repeated the number of times if occurs in the array
+    inv = np.empty(arr.shape, dtype=np.intp)    # The inverse mapping from unique to arr -- a list
+    inv[sort_ind] = sorted_key_inds             # of the indices of uniq such that keys[inv] == arr
+    split_points = np.nonzero(isdiff)[0]        # the locations where the array has change points
+    index_groups = split_at_boundaries(np.argsort(inv), split_points[1:]) # cluster indices of arr into groups based on keys and then split index groups according to split points
+    return keys, index_groups
+
+def _get_index_groups_old(arr, splittype=None):
     '''For a 1D array, get all unique values (keys)
         and the locations of each value in the original array (index_groups).
         keys and index_groups are aligned so that dict(zip(keys, index_groups))
