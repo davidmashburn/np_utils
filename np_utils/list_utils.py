@@ -171,7 +171,9 @@ def partition(l,n,clip=True):
 def split_at_boundaries(l, boundaries):
     '''Split a list at the boundaries (which must be a sorted list)
        Endpoints are optional and will be ignored
-       This function uses itertools in the case that the '''
+       This function uses itertools in case "boundaries" is very large
+       (avoids any intermediate list or array creation)
+       This function works on and is fast for any iterable, including arrays'''
     lenl = len(l)
     boundaries = boundaries[(1 if boundaries[0] == 0 else 0):
                             (-1 if boundaries[-1] == lenl else None)]

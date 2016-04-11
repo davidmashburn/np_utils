@@ -54,7 +54,7 @@ def test_haselement_3B():
 def test_element_of_3D():
     assert not haselement( [[[1,2,3,4],[5,6,7,8]],[[1,2,3,5],[10,12,14,15]]], [[1,2,3,4],[10,12,14,15]] )
 
-def test_split_array_at_boundaries_1():
+def test_split_at_boundaries_1(): # test for arrays as well
     x = np.array([0, 3, 8, 6, 5, 9, 8, 9, 9, 2])
     s = split_at_boundaries(x, [2,3,4])
     s2 = split_at_boundaries(x, [0,2,3,4,10])
