@@ -40,6 +40,31 @@ def multidot(*args):
        reduce(np.dot,args,1)'''
     return reduce(np.dot,args,1)
 
+def map_along_axis(f, axis, arr):
+    '''Apply a function to a specific axis of an array
+       This is slightly different from np.apply_along_axis when used
+       in more than 2 dimensions.
+       apply_along_axis applies the function to the 1D arrays which are associated with that axis
+       map_along_axis transposes the original array so that that dimension is first
+       and then applies the function to each entire (N-1)D array
+       
+       Example:
+       >>> arr = np.arange(8).reshape([2,2,2])
+       >>> arr
+       array([[[0, 1],
+               [2, 3]],
+              [[4, 5],
+               [6, 7]]])
+       >>> np.apply_along_axis(np.sum, 1, arr)
+       array([[ 2,  4],
+              [10, 12]])
+       >>> map_along_axis(np.sum, 1, arr)
+       array([10, 18])
+    '''
+    arr = np.asanyarray(arr)
+    new_dim_order = [axis] + range(axis) + range(axis+1,arr.ndim)
+    return np.array([f(a) for a in arr.transpose(new_dim_order)])
+
 def fields_view(arr, fields):
     '''Select fields from a record array without a copy
        Taken from:
