@@ -446,20 +446,25 @@ def linearTransform( points,newRefLine,mirrored=False ):
        "points" can also be a single point.
        Optional mirroring with "mirrored" argument.'''
     points,newRefLine = np.asarray(points), np.asarray(newRefLine)
-    dx,dy = (newRefLine[1]-newRefLine[0])
-    mir = (-1 if mirrored else 1)
-    return np.dot( points, [[dx,dy],[-dy*mir,dx*mir]] ) + newRefLine[0]
+    dx,dy = newRefLine[1] - newRefLine[0]
+    mir = -1 if mirrored else 1
+    mat = [[ dx      , dy      ],
+           [-dy * mir, dx * mir]]
+    return np.dot(points, mat) + newRefLine[0]
 
 def reverseLinearTransform(points,oldRefLine,mirrored=False):
     '''Transforms points from a (x1,y1) -> (x2,y2) reference coordinate system
        to a (0,0) -> (1,0) coordinate system.
        "points" can also be a single point.
        Optional mirroring the "mirrored" argument.'''
-    points,oldRefLine = np.asarray(points), np.asarray(oldRefLine)
-    dx,dy = (oldRefLine[1]-oldRefLine[0])
-    points = (points - oldRefLine[0])
-    mir = (-1 if mirrored else 1)
-    return np.dot( points, [[dx,-dy*mir],[dy,dx*mir]] ) * 1./(dx**2+dy**2)
+    points, oldRefLine = np.asarray(points), np.asarray(oldRefLine)
+    dx, dy = oldRefLine[1] - oldRefLine[0]
+    points = points - oldRefLine[0]
+    mir = -1 if mirrored else 1
+    matT = [[dx,-dy * mir],
+           [dy, dx * mir]]
+    dx2dy2 = np.square(dx) + np.square(dy)
+    return np.dot(points, matT) * 1. / dx2dy2
 
 def FindOptimalScaleAndTranslationBetweenPointsAndReference(points,pointsRef):
     '''Find the (non-rotational) transformation that best overlaps points and pointsRef
@@ -477,12 +482,12 @@ def FindOptimalScaleAndTranslationBetweenPointsAndReference(points,pointsRef):
     # Compute some means:
     pm     = points.mean(axis=0)
     prefm  = pointsRef.mean(axis=0)
-    p2m    = (points**2).mean(axis=0)
-    pTpref = (points*pointsRef).mean(axis=0)
+    p2m    = np.square(points).mean(axis=0)
+    pTpref = (points * pointsRef).mean(axis=0)
     
     a = ((   (pm*prefm).sum() - pTpref.sum()   ) /
          #   -------------------------------     # fake fraction bar...
-         (      (pm**2).sum() - p2m.sum()      ))
+         (      (pm*pm).sum() - p2m.sum()      ))
     p0 = prefm - a*pm
     return a,p0
     
@@ -557,13 +562,21 @@ def diffmean(x,*args,**kwds):
     x = np.asarray(x)
     return x - x.mean(*args,**kwds)
 
+def sum_sqr_diff(a, b):
+    '''Compute the sum of square differences between a and b:
+          Sum      (a[i] - b[i]) ** 2
+       i = 0 to n
+    '''
+    a, b = map(np.asanyarray, (a, b))
+    return np.sum(np.square(a - b))
+
 def sqrtSumSqr(x,axis=-1):
     '''Compute the sqrt of the sum of the squares'''
-    return np.sqrt(np.sum(np.asarray(x)**2,axis=axis))
+    return np.sqrt(np.sum(np.square(np.asanyarray(x)),axis=axis))
 
 def sqrtMeanSqr(x,axis=-1):
     '''Compute the sqrt of the mean of the squares (RMS)'''
-    return np.sqrt(np.mean(np.asarray(x)**2,axis=axis))
+    return np.sqrt(np.mean(np.square(np.asanyarray(x)),axis=axis))
 
 def vectorNorm(x,axis=-1):
     '''Normalize x by it's length (sqrt of the sum of the squares)
