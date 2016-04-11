@@ -353,13 +353,56 @@ def interp(l,index):
         indexB = indexA + (1 if index>=0 else -1)
         return l[indexA]*(1-m) + l[indexB]*(m)
 
-def assertSameAndCondense(l,message='List values differ!'):
+def all_equal(l, equality_function=operator.eq):
+    '''Test if all elements in a list are the same'''
+    if len(l)<2:
+        return True
+    
+    l0 = l[0]
+    return all([equality_function(i, l0) for i in l])
+
+def assertSameAndCondense(l, message='List values differ!',
+                          equality_function=operator.eq):
     '''Take a list of values that should all be the same, assert that this is true,
        and then return the common value
        This acts as a safe funnel in exploratory data processing,
        cutting a large same-valued list down to a single value.'''
-    assert all(i==l[0] for i in l), message
+    assert all_equal(l), message
     return l[0]
+
+#####################################
+## Some utilities for dictionaries ##
+#####################################
+
+def dict_apply(f, d):
+    return {k: f(v) for k, v in d.iteritems()}
+
+def dict_key_union(dicts):
+    '''Form the superset (union) of all keys in all dictionaries'''
+    keys = set()
+    for d in dicts:
+        if d is not None:
+            keys.update(d.keys())
+    return list(keys)
+
+def rotate_list_of_dicts(ld):
+    '''Change from a list of dicts to a dict of lists
+       Fill missing entries with "None"
+       This is not very efficient, but it works.'''
+    return {k: [(None if i is None or
+                         k not in i else
+                 i[k])
+                for i in ld]
+            for k in dict_key_union(ld)}
+
+def rotate_dict_of_lists(dl):
+    '''Change from a dict of lists to a list of dicts
+       Skips entries for shorter lists'''
+    num_dicts = max(map(len, dl.values()))
+    return [{k: v[i]
+             for k, v in dl.iteritems()
+             if i < len(v)}
+            for i in range(num_dicts)]
 
 ##########################################
 ## Some utilities for nested structures ##
