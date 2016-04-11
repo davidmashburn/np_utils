@@ -14,9 +14,10 @@
    list of the coordinates that can be used as array indices
    '''
 
+from copy import copy
 import numpy as np
 
-from list_utils import getMostCommonVal
+from list_utils import totuple, flatten, getMostCommonVal, fL
 
 # Thanks Wikipedia!!
 # A line-drawing algorithm by the pixel...
@@ -67,6 +68,75 @@ def BresenhamFunction(p0,p1): # Generalization to n-dimensions
                 p[i] += signs[i]
                 err[i] += delta[imax]
     return l
+
+def NDRectangle(start,end):
+    '''Given any two points in an ND grid, return all the points that
+       would fill an ND rectangle using these points as distant corners'''
+    start,end = [f([start,end],axis=0)     # go from small to large in each dimension
+                 for f in (np.min,np.max)]
+    nDim, nPts = len(start), np.prod(end+1-start)
+    slicelist = [slice(i,j+1) for i,j in zip(start,end)]
+    # These two ::-1's just make it so the the results are already sorted
+    # (otherwise the results are the same without them):
+    pts = np.transpose(np.mgrid[slicelist[::-1]]).reshape(nPts,nDim)[:,::-1]
+    return pts
+
+def ImageCircle(r):
+    """Create a binary image of a circle radius r"""
+    im = np.zeros([2*r-1]*2,dtype=np.int)
+    r2 = r**2
+    for i in range(2*r-1):
+        for j in range(2*r-1):
+            if (i-r+1)**2+(j-r+1)**2 < r2:
+                im[i,j] = 1
+            else:
+                im[i,j]=0
+    return im
+
+def ImageSphere(r):
+    """Create a binary image of a circle radius r"""
+    im = np.zeros([2*r-1]*3,dtype=np.int)
+    r2 = r**2
+    for i in range(2*r-1):
+        for j in range(2*r-1):
+            for k in range(2*r-1):
+                if (i-r+1)**2+(j-r+1)**2+(k-r+1)**2 < r2:
+                    im[i,j,k] = 1
+                else:
+                    im[i,j,k]=0
+    return im
+
+def blitCircleToArray(arr,x,y,r,val):
+    xL,xH = np.clip(x-r+1,0,arr.shape[0]), np.clip(x+r,0,arr.shape[0])
+    yL,yH = np.clip(y-r+1,0,arr.shape[1]), np.clip(y+r,0,arr.shape[1])
+    xcL,xcH = xL-(x-r+1), 2*r-1 + xH-(x+r)
+    ycL,ycH = yL-(y-r+1), 2*r-1 + yH-(y+r)
+    #print (xL,xH,yL,yH),(xcL,xcH,ycL,ycH)
+    #print xH-xL,yH-yL,xcH-xcL,ycH-ycL
+    c=ImageCircle(r)[xcL:xcH,ycL:ycH]
+    #print arr[xL:xH,yL:yH].shape,c.shape
+    arr[xL:xH,yL:yH] *= (1-c)
+    arr[xL:xH,yL:yH] += (val*c)
+
+def blitSphereToArray(arr,x,y,z,r,val):
+    xL,xH = np.clip(x-r+1,0,arr.shape[0]), np.clip(x+r,0,arr.shape[0])
+    yL,yH = np.clip(y-r+1,0,arr.shape[1]), np.clip(y+r,0,arr.shape[1])
+    zL,zH = np.clip(z-r+1,0,arr.shape[2]), np.clip(z+r,0,arr.shape[2])
+    
+    xcL,xcH = xL-(x-r+1), 2*r-1 + xH-(x+r)
+    ycL,ycH = yL-(y-r+1), 2*r-1 + yH-(y+r)
+    zcL,zcH = zL-(z-r+1), 2*r-1 + zH-(z+r)
+    
+    #print (xL,xH,yL,yH),(xcL,xcH,ycL,ycH)
+    #print xH-xL,yH-yL,xcH-xcL,ycH-ycL
+    c=ImageSphere(r)[xcL:xcH,ycL:ycH,zcL:zcH]
+    #print arr[xL:xH,yL:yH].shape,c.shape
+    arr[xL:xH,yL:yH,zL:zH] *= (1-c)
+    arr[xL:xH,yL:yH,zL:zH] += (val*c)
+
+###############################################################################
+##                   Functions for Bresenham Triangles                       ##
+###############################################################################
 
 def GetDirectionsOfSteepestSlope(p0,p1,p2):
     '''For a 2-D plane in N-D space, fixing each dimension, identify the
@@ -164,6 +234,61 @@ def GetDirectionsOfSteepestSlope_BorderCheckingVersion(borderPts):
         maxSlopeDim.append(getMostCommonVal(dimsOfGreatestExtent))
     return maxSlopeDim
 
+def _getMinMaxList(borderPts, iscan, iline):
+    '''Helper function for BresenhamTriangle'''
+    #Sort the border points according to iscan (x') and then iline (y')
+    borderPtsSort = sorted( borderPts,  key = lambda x: (x[iscan],x[iline]) )
+    
+    # For each x' plane, select the two most distant points in y' to pass to the Bresenham function
+    minMaxList = []
+    for i,p in enumerate(borderPtsSort):
+        if borderPtsSort[i-1][iscan] != borderPtsSort[i][iscan]:
+            minMaxList.append([p,p]) # ensure there are always 2 points, even if they are the same
+        else:
+            minMaxList[-1][-1] = p
+    return minMaxList
+
+def GetTriangleBorderPoints(p0,p1,p2):
+    '''Collect all the border points for a raster triangle and remove any duplicates'''
+    allPts = [BresenhamFunction(pa,pb)
+              for pa,pb in ((p0,p1),(p1,p2),(p2,p0))]
+    return list(set(totuple(flatten(allPts))))
+
+def _BresTriBase(p0,p1,p2,dss_rerun=False, iscan_iline=None):
+    '''Do grunt work common to both Bresenham Triangle functions'''
+    borderPts = GetTriangleBorderPoints(p0,p1,p2)
+    
+    if iscan_iline is not None:
+        iscan, iline = iscan_iline
+        return iscan, iline, borderPts
+    
+    # Get the steepest dimension relative to every other dimension:
+    dSS = GetDirectionsOfSteepestSlope(p0,p1,p2)
+    
+    dSS_notNone = [i for i in dSS if i!=None]
+    if len(dSS_notNone) == 0:
+        # Degenerate slope matrix (all 0's); points are collinear
+        return borderPts
+    iscan = getMostCommonVal(dSS_notNone)
+    if dss_rerun:
+        all_but = [i for i in range(len(p0)) if i != iscan]
+        p0a,p1a,p2a = fL([p0,p1,p2])[:, all_but]
+        dSS2 = GetDirectionsOfSteepestSlope(p0a,p1a,p2a)
+        dSS2_notNone = [i for i in dSS2 if i!=None]
+        iline = getMostCommonVal(dSS2_notNone)
+        if iline >= iscan:
+            iline += 1
+    else:
+        iline = dSS[iscan]
+    assert iline!=None, "iline is <flat>, that can't be right!"
+    
+    return iscan, iline, borderPts
+
+def _map_BresLines(point_pairs):
+    '''Draw a bunch of Bresenham lines and collect the points'''
+    return [p for start, end in point_pairs
+              for p in BresenhamFunction(start,end)]
+
 def BresenhamTriangle(p0,p1,p2,doubleScan=True): # Generalization for triangle
     '''Bresenham N-D triangle rasterization
        Uses Bresenham N-D lines to rasterize the triangle.
@@ -178,109 +303,118 @@ def BresenhamTriangle(p0,p1,p2,doubleScan=True): # Generalization for triangle
     if p2==None:
         return BresenhamFunction(p0,p1) # In case the last argument is None just use a plane...
     
-    # Collect all the border points for the triangle and remove duplicates
-    borderPts = list(set(totuple(flatten( [ BresenhamFunction(pa,pb)
-                                           for pa,pb in ((p0,p1),(p1,p2),(p2,p0)) ] ))))
-    
-    # Get the steepest dimension relative to every other dimension:
-    #dSS = GetDirectionsOfSteepestSlope_BorderCheckingVersion(borderPts)
-    dSS = GetDirectionsOfSteepestSlope(p0,p1,p2)
-    
-    dSS_notNone = [i for i in dSS if i!=None]
-    if len(dSS_notNone) == 0:
-        # Degenerate slope matrix (all 0's); points are collinear
-        return borderPts
-    iscan = getMostCommonVal(dSS_notNone)
-    iline = dSS[iscan]
-    assert iline!=None,"iline is <flat>, that can't be right!"
-    
-    def getMinMaxList(borderPts,iscan,iline):
-        #Sort the border points according to iscan (x') and then iline (y')
-        borderPtsSort = sorted( borderPts,  key = lambda x: (x[iscan],x[iline]) )
-        
-        # For each x' plane, select the two most distant points in y' to pass to the Bresenham function
-        minMaxList = []
-        for i,p in enumerate(borderPtsSort):
-            if borderPtsSort[i-1][iscan] != borderPtsSort[i][iscan]:
-                minMaxList.append([p,p]) # ensure there are always 2 points, even if they are the same
-            else:
-                minMaxList[-1][-1] = p
-        return minMaxList
+    iscan, iline, borderPts = _BresTriBase(p0,p1,p2)
     
     # Draw Bresenham lines to rasterize the triangle (draw along y' direction for each x' value)
-    minMaxList = getMinMaxList(borderPts,iscan,iline)
-    triPts = [ i for start,end in minMaxList
-                 for i in BresenhamFunction(start,end) ]
+    minMaxList = _getMinMaxList(borderPts,iscan,iline)
+    triPts = _map_BresLines(minMaxList)
     
     if doubleScan:
-        minMaxList = getMinMaxList(borderPts,iline,iscan)
-        triPts += [ i for start,end in minMaxList
-                      for i in BresenhamFunction(start,end)
-                      if i not in triPts ]
+        minMaxList = _getMinMaxList(borderPts,iline,iscan)
+        triPts += _map_BresLines(minMaxList)
     
     return triPts
 
-def NDRectangle(start,end):
-    '''Given any two points in an ND grid, return all the points that
-       would fill an ND rectangle using these points as distant corners'''
-    start,end = [f([start,end],axis=0)     # go from small to large in each dimension
-                 for f in (np.min,np.max)]
-    nDim, nPts = len(start), np.prod(end+1-start)
-    slicelist = [slice(i,j+1) for i,j in zip(start,end)]
-    # These two ::-1's just make it so the the results are already sorted
-    # (otherwise the results are the same without them):
-    pts = np.transpose(np.mgrid[slicelist[::-1]]).reshape(nPts,nDim)[:,::-1]
-    return pts
+def _rounder(x):
+    '''Return the nearest int for x
+       (where x can also be an array)'''
+    return np.round(x).astype(np.int)
 
-def ImageCircle(r):
-    """Create a binary image of a circle radius r"""
-    im = np.zeros([2*r-1]*2,dtype=np.int)
-    r2 = r**2
-    for i in range(2*r-1):
-        for j in range(2*r-1):
-            if (i-r+1)**2+(j-r+1)**2 < r2:
-                im[i,j] = 1
-            else:
-                im[i,j]=0
-    return im
+def sample_points_from_plane(p, projected_pts, iscan, iline):
+    '''Given 3 ND points (p) that define a 2D plane in ND space
+       and also given a set of 2D points (projected_pts) and the
+       two associated dimensions (iscan, iline),
+       return the points in ND space where each (N-2) space
+       (associated with each projected point) intersects the 2D plane
+       
+       Details:
+       All other dimensions are interpolated using the formula for a plane:
+       
+       for three points (x0,y0,z0,...), (x1,y1,z1,...), (x2,y2,z2,...):
+       x = x0 + (x1-x0)*s + (x2-x0)*t
+       y = y0 + (y1-y0)*s + (y2-y0)*t
+       z = z0 + (z1-z0)*s + (z2-z0)*t
+       ...
+        
+       When 2 of these (x' and y') are fixed,
+       we can solve for s and t:
+       (here using A and B instead of x' and y'):
+       
+       A = A0 + (A1-A0)*s + (A2-A0)*t
+       B = B0 + (B1-B0)*s + (B2-B0)*t
+       
+       Using matrix form and with
+       dX01 = X1-X0  and  dX02 = X2-X0:
+       
+       [A - A0] = [dA01  dA02] * [s]
+       [B - B0] = [dB01  dB02] * [t]
+       
+       We can solve by inverting tbe delta's matrix:
+       
+       [s] = [dA01  dA02]^-1 * [A - A0]
+       [t] = [dB01  dB02]    * [B - B0]
+       
+       Lastly, we find values for all remaining coordinates (x,y,z,...) by plugging s and t
+       back into the original equations and rounding the result.'''
+    p = np.asanyarray(p)
+    shifted_pts = projected_pts - p[0, (iscan, iline)]
+    pts_diff = p[1:] - p[0] # p1-p0, p2-p0
+    mat = pts_diff.T[(iscan, iline),]
+    inv = np.linalg.inv(mat)
+    s, t = np.dot(inv, shifted_pts.T)
+    new_points = _rounder(p[0] + np.outer(s, pts_diff[0]) +
+                                 np.outer(t, pts_diff[1]))
+    return new_points
 
-def ImageSphere(r):
-    """Create a binary image of a circle radius r"""
-    im = np.zeros([2*r-1]*3,dtype=np.int)
-    r2 = r**2
-    for i in range(2*r-1):
-        for j in range(2*r-1):
-            for k in range(2*r-1):
-                if (i-r+1)**2+(j-r+1)**2+(k-r+1)**2 < r2:
-                    im[i,j,k] = 1
-                else:
-                    im[i,j,k]=0
-    return im
-
-def blitCircleToArray(arr,x,y,r,val):
-    xL,xH = np.clip(x-r+1,0,arr.shape[0]), np.clip(x+r,0,arr.shape[0])
-    yL,yH = np.clip(y-r+1,0,arr.shape[1]), np.clip(y+r,0,arr.shape[1])
-    xcL,xcH = xL-(x-r+1), 2*r-1 + xH-(x+r)
-    ycL,ycH = yL-(y-r+1), 2*r-1 + yH-(y+r)
-    #print (xL,xH,yL,yH),(xcL,xcH,ycL,ycH)
-    #print xH-xL,yH-yL,xcH-xcL,ycH-ycL
-    c=ImageCircle(r)[xcL:xcH,ycL:ycH]
-    #print arr[xL:xH,yL:yH].shape,c.shape
-    arr[xL:xH,yL:yH] *= (1-c)
-    arr[xL:xH,yL:yH] += (val*c)
-
-def blitSphereToArray(arr,x,y,z,r,val):
-    xL,xH = np.clip(x-r+1,0,arr.shape[0]), np.clip(x+r,0,arr.shape[0])
-    yL,yH = np.clip(y-r+1,0,arr.shape[1]), np.clip(y+r,0,arr.shape[1])
-    zL,zH = np.clip(z-r+1,0,arr.shape[2]), np.clip(z+r,0,arr.shape[2])
+def _BresenhamTriangle_PlaneFormulaVersion(p0, p1, p2, iscan_iline=None): # Generalization for triangle
+    '''Bresenham N-D triangle rasterization
+       Uses a Bresenham-like algorithm, but uses floating-point
+       math and rounding for greater accuracy.
+       Holes are prevented by proper selection of dimensions:
+           the 'scan' dimension is fixed for each line (x')
+           the 'line' dimension has the maximum slope perpendicular to iscan (y')
+       All other dimensions are interpolated using the formula for a plane:
+       
+       for three points (x0,y0,z0,...), (x1,y1,z1,...), (x2,y2,z2,...):
+       x = x0 + (x1-x0)*s + (x2-x0)*t
+       y = y0 + (y1-y0)*s + (y2-y0)*t
+       z = z0 + (z1-z0)*s + (z2-z0)*t
+       ...
+        
+       When 2 of these (x' and y') are fixed,
+       we can solve for s and t:
+       (here using A and B instead of x' and y'):
+       
+       A = A0 + (A1-A0)*s + (A2-A0)*t
+       B = B0 + (B1-B0)*s + (B2-B0)*t
+       
+       Using matrix form and with
+       dX01 = X1-X0  and  dX02 = X2-X0:
+       
+       [A - A0] = [dA01  dA02] * [s]
+       [B - B0] = [dB01  dB02] * [t]
+       
+       We can solve by inverting tbe delta's matrix:
+       
+       [s] = [dA01  dA02]^-1 * [A - A0]
+       [t] = [dB01  dB02]    * [B - B0]
+       
+       Lastly, we find values for all remaining coordinates (x,y,z,...) by plugging s and t back into the original equations and rounding the result.
+    '''
+    if p2==None:
+        return BresenhamFunction(p0,p1) # In case the last argument is None just use a plane...
     
-    xcL,xcH = xL-(x-r+1), 2*r-1 + xH-(x+r)
-    ycL,ycH = yL-(y-r+1), 2*r-1 + yH-(y+r)
-    zcL,zcH = zL-(z-r+1), 2*r-1 + zH-(z+r)
+    p = np.array([p0,p1,p2])
     
-    #print (xL,xH,yL,yH),(xcL,xcH,ycL,ycH)
-    #print xH-xL,yH-yL,xcH-xcL,ycH-ycL
-    c=ImageSphere(r)[xcL:xcH,ycL:ycH,zcL:zcH]
-    #print arr[xL:xH,yL:yH].shape,c.shape
-    arr[xL:xH,yL:yH,zL:zH] *= (1-c)
-    arr[xL:xH,yL:yH,zL:zH] += (val*c)
+    iscan, iline, borderPts = _BresTriBase(p0,p1,p2,dss_rerun=False, iscan_iline=iscan_iline)
+    
+    # Draw Bresenham lines to rasterize the triangle (draw along y' direction for each x' value)
+    minMaxList = _getMinMaxList(borderPts,iscan,iline)
+    
+    # Get the points in the iscan/iline projection of the output:
+    minMaxProjected = fL(minMaxList)[:, :, (iscan, iline)]
+    projectedTriPts = _map_BresLines(minMaxProjected)
+    
+    new_points = sample_points_from_plane(p, projectedTriPts, iscan, iline)
+    
+    return new_points
