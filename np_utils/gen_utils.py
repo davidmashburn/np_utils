@@ -14,8 +14,20 @@ Flow control utilities:
                         using callFunctionIfNotNone
 '''
 
+import os
 import types
 import re
+
+#############################
+## File handling utilities ##
+#############################
+
+def makeifnotexists(d):
+    '''If a directory does not exist, make it
+       Return d (for functional use cases)'''
+    if not os.path.exists(d):
+        os.mkdir(d)
+    return d
 
 ##########################
 ## Conversion utilities ##

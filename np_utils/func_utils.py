@@ -12,6 +12,7 @@ Functions that generate functions:
 '''
 
 from functools import wraps
+import inspect
 
 def identity(x):
     '''Identity function; just returns the argument'''
@@ -29,6 +30,7 @@ def mapf(f):
 
 def kwdPop(kwds,key,defaultValue):
     '''This is obsolete: kwds.pop(key, defaultValue) does the same thing.
+       The technique is still really useful, though!
        
        If a dictionary has a key, pop the value and return it,
        otherwise return defaultValue.
@@ -195,3 +197,30 @@ def doublewrap(f):
             return realf
 
     return new_dec
+
+#############################
+## inspect-based utilities ##
+#############################
+
+def get_function_arg_names_and_kwd_values(f):
+    '''Use the inspect module to extract the args and kwds from function
+       Returns the argument names as a list of strings and
+       the keyword values as a list of objects.
+       
+       There will always be fewer (or euqal) keyword values than
+       argument names, and keyword values always line up with the end of
+       the argument names
+       
+       This cannot handle functions that use splatting (*args or **kwds)
+       
+       Example:
+       >>> def f(a, b, c=5): return a + b + c
+       >>> get_function_args_and_kwds(f)
+       (['a', 'b', 'c'], (5,))
+       >>> get_function_args_and_kwds(f, skip=1)
+       (['b', 'c'], (5,))
+       '''
+    a = inspect.getargspec(f)
+    assert a.varargs is None and a.keywords is None, \
+        "Arg maties! This function doesn't handle *args or **kwds"
+    return a.args, (() if a.defaults is None else a.defaults)
