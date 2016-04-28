@@ -1,6 +1,33 @@
 import np_utils
 from np_utils import *
 
+from operator import add
+increment = lambda x: x + 1
+
+def test_mapf():
+    x = [1,2,3]
+    y = [4,5,6]
+    assert mapf(increment)(x) == map(increment, x)
+    assert mapf(add)(x, y) == map(add, x, y)
+
+def test_mapd():
+    d = {1:2, 2:3, 3:4}
+    d1 = {1:3, 2:4, 3:5}
+    assert mapd(increment, d) == d1
+    assert mapd(add, d, 1) == d1
+
+def test_map_in_place():
+    x = [1,2,3]
+    x1 = [2,3,4]
+    map_in_place(increment, x)
+    assert x == x1
+
+def test_mapd_in_place():
+    d = {1:2, 2:3, 3:4}
+    d1 = {1:3, 2:4, 3:5}
+    mapd_in_place(increment, d)
+    assert d == d1
+
 def test_double_wrap():
     '''This is not really a test of doublewrap as much as
        a demo of how to use it'''
@@ -29,4 +56,8 @@ def test_double_wrap():
     assert h(10) == 12
 
 if __name__ == '__main__':
+    test_mapf()
+    test_mapd()
+    test_map_in_place()
+    test_mapd_in_place()
     test_double_wrap()

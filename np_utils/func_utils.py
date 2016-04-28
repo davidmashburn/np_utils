@@ -26,8 +26,32 @@ def packargs(*x):
 def mapf(f):
     '''Just the functional form of map:
        mapf(f)(x) <--> map(f,x)'''
-    return lambda x: map(f,x)
+    return lambda *args: map(f, *args)
 
+def mapd(f, d, *extra_args, **kwds):
+    '''Map a function over dictionary values.
+       Keys remain the same in the output'''
+    return {k: f(v, *extra_args, **kwds)
+            for k, v in d.iteritems()}
+
+def map_in_place(f, l, *extra_args, **kwds):
+    '''Mutating version of map that can only take a single argument
+       Returns modified version of original list
+       All optional arguments are passed to f'''
+    for i, p in enumerate(l):
+        l[i] = f(p, *extra_args, **kwds)
+
+    return l
+
+def mapd_in_place(f, d, *extra_args, **kwds):
+    '''Mutating version of mapd
+       Returns modified version of original dict
+       All optional arguments are passed to f'''
+    for k, v in d.iteritems():
+        d[k] = f(v, *extra_args, **kwds)
+
+    return d
+    
 def kwdPop(kwds,key,defaultValue):
     '''This is obsolete: kwds.pop(key, defaultValue) does the same thing.
        The technique is still really useful, though!
