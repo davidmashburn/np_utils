@@ -61,6 +61,23 @@ def islistlike(x):
 ## String utilities ##
 ######################
 
+def string_between(s, before, after):
+    '''Find the string between two substrings
+       Bascially rolling up the pattern:
+          s.split(before)[1].split(after)[0]
+       into an actual function with proper checks.
+       To start from the beginning or end of the string,
+       pass None as before or after'''
+    if before is not None:
+        t = s.split(before)
+        assert len(t) > 1, '"before" argument is not in the string!'
+        s = t[1]
+    if after is not None:
+        t = s.split(after)
+        assert len(t) > 1, '"after" argument is not in the string!'
+        s = t[0]
+    return s
+
 def multisplit(string, *delimiters):
     '''Split a string at any of a number of delimeters.
        With one delimeter, this is equivalent to string.split.'''
