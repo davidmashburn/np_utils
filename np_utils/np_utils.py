@@ -142,6 +142,19 @@ def _get_index_groups_old(arr):
     index_groups = np.split(np.argsort(inv), split_points)
     return keys, index_groups
 
+def get_array_subgroups(arr, grouping_arr):
+    '''Form a dictionary of subgroups of arr
+       where keys are members of grouping_arr
+       (grouping_arr is usually something like arr[field])
+       and values are rows where grouping_arr matches each key
+
+       A typical usage would be for a record array with a column like 'foreign_id':
+       d = get_array_subgroups(arr, arr['foreign_id'])
+       Then d[id] will be a subarray of arr where arr['foreign_id']==id'''
+    assert len(arr) == len(grouping_arr), 'Arrays must have the same length!'
+    keys, index_groups = get_index_groups(grouping_arr)
+    return {k: arr[inds] for k, inds in zip(keys, index_groups)}
+
 def np_groupby(keyarr, arr, *functions, **kwds):
     '''A really simple, relatively fast groupby for numpy arrays.
        Takes two arrays of the same length and a function:
