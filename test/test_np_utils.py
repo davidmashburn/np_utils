@@ -10,6 +10,17 @@ from np_utils import *
 
 cache = {}
 
+# Unused, but pretty useful function (and there was nowhere else to put it)
+def assert_index_groups_same(x, y):
+    assert np.array_equal(x[0], y[0])
+    assert len(x[1])==len(y[1])
+    for i, j in zip(x[1], y[1]):
+        try:
+            assert np.array_equal(i, j)
+        except:
+            print i, j
+            raise
+
 def _get_sample_rec_array():
     '''Build a dummy record array to test with. Has fields m,n,o,p.
        Cache the result as "cache['sample_recarray']" to save time.'''

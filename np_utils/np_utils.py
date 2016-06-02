@@ -494,13 +494,14 @@ def FindOptimalScaleAndTranslationBetweenPointsAndReference(points,pointsRef):
 
     # Compute some means:
     pm     = points.mean(axis=0)
+    pm2    = np.square(pm)
     prefm  = pointsRef.mean(axis=0)
     p2m    = np.square(points).mean(axis=0)
     pTpref = (points * pointsRef).mean(axis=0)
     
     a = ((   (pm*prefm).sum() - pTpref.sum()   ) /
          #   -------------------------------     # fake fraction bar...
-         (      (pm*pm).sum() - p2m.sum()      ))
+         (        pm2.sum() - p2m.sum()        ))
     p0 = prefm - a*pm
     return a,p0
     
