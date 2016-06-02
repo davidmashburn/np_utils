@@ -271,6 +271,16 @@ def flipargs(f):
     newf.__doc__ = 'Arguments reversed:\n\n' + newf.__doc__
     return newf
 
+def reflex(f):
+    '''Take a function that takes two arguments and change it to take
+       only one argument that is used as both arguments
+       Any kwds are passed through as normal'''
+    @wraps(f)
+    def newf(x, **kwds):
+        return f(x, x, **kwds)
+    
+    return newf
+
 #############################
 ## inspect-based utilities ##
 #############################
