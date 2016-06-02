@@ -154,7 +154,19 @@ def constf(value):
            f(1,5,a=6) -> 10'''
     return lambda *args,**kwds: value
 
-def fork(f,*functionOrValuesList):
+def multicall(funs, *args, **kwds):
+    '''Call multiple functions with the same arguments
+       Essentially like map, but swapping the roles of functions and arguments
+       The defalt option use_strict=False allows non-callable objects
+       to be passed thru uncalled and without throwing errors'''
+    use_strict = kwds.pop('use_strict', False)
+    if use_strict:
+        return [f(*args, **kwds) for f in funs]
+    else:
+        return [f(*args, **kwds) if hasattr(f, '__call__') else f
+                for f in funs]
+
+def fork(f, *functionOrValuesList, **fkwds):
     '''A generalized fork function for python which additionally allows
            non-callable values to be passed through.
        
@@ -187,18 +199,45 @@ def fork(f,*functionOrValuesList):
        In the simplest case with b as a function, fork is equivalent to "compose":
            fork(a,b) <--> compose(a,b)
        Alternatively, with b as a value, fork is equivalent to "call"
-           fork(a,b) <--> a(b)'''
-    return lambda *args,**kwds: f(*[ ( i(*args,**kwds)
-                                       if hasattr(i,'__call__') else
-                                       i )
-                                    for i in functionOrValuesList])
+           fork(a,b) <--> a(b)
+       
+       fork also takes two optional kwds (the rest are passed to f):
+           use_splat: whether or not to unpack the arguments when calling f
+                      default: True
+           use_strict: when False, forces all args to be functions
+                       or else errors will occur
+                       default: False'''
+    use_splat = fkwds.pop('use_splat', True)
+    use_strict = fkwds.pop('use_strict', False)
+    
+    def newf(*args, **kwds):
+        kwds['use_strict'] = use_strict
+        fargs = multicall(functionOrValuesList, *args, **kwds)
+        fargs = fargs if use_splat else [fargs]
+        return f(*fargs, **fkwds)
+    return newf
 
-def fork_strict(f,*functionList, **forkKwds):
+def old_fork(f, *functionOrValuesList):
+    return lambda *args, **kwds: (
+        f(*[i(*args,**kwds) if hasattr(i,'__call__') else i
+            for i in functionOrValuesList]))
+
+def fork1(f,*functionOrValuesList, **fkwds):
+    '''Same as fork, but f expects a single argument with multiple elements
+      (non-splat) instead of multiple arguments (splat)
+       
+       Here is the documentation for fork:
+       ''' + fork.__doc__
+    fkwds['use_splat'] = False
+    return fork(f, *functionOrValuesList, **fkwds)
+
+def fork_strict(f, *functionList, **fkwds):
     '''The same as fork, but restricted to functions only.
        
        Here is the documentation for fork:
        '''+fork.__doc__
-    return lambda *args,**kwds: f(*[i(*args,**kwds) for i in functionList])
+    fkwds['use_strict'] = True
+    return fork(f, *functionList, **fkwds)
 
 def doublewrap(f):
     '''
@@ -221,6 +260,16 @@ def doublewrap(f):
             return realf
 
     return new_dec
+
+def flipargs(f):
+    '''Generator that changes a function to take its arguments in reverse'''
+    @wraps(f)
+    def newf(*args, **kwds):
+        return f(*reverse(args), **kwds)
+    
+    # Add a note about the args being flipped to the doc string
+    newf.__doc__ = 'Arguments reversed:\n\n' + newf.__doc__
+    return newf
 
 #############################
 ## inspect-based utilities ##
