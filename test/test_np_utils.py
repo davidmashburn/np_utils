@@ -140,6 +140,24 @@ def test_rec_groupby_3():
     
     assert np.all(g_r == g_n)
 
+def test_get_first_indices_1():
+    a = [0,1,2,3,3,4,5,12,4,8]
+    assert np.all(get_first_indices(a, [1, 4, 12]) == [1, 5, 7])
+    assert np.all(get_first_indices(a, [1, 4, 12,13]) == [1, 5, 7, None])
+    assert np.all(get_first_indices(a, [1, 4, 12, 13], missing='len') == [1, 5, 7, len(a)])
+    assert np.all(get_first_indices(a, [1, 4, 12, 13], missing=-1) == [1, 5, 7, -1])
+    
+    try:
+        np.all(get_first_indices(a, [1, 4, 12, 13], missing='fail') == [1, 5, 7, -1])
+        intentioned_fail = False
+    except:
+        intentioned_fail = True
+    assert intentioned_fail
+    
+
+test_get_first_indices_1()
+exit()
+
 def test_addBorder_0():
     v = [[[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
          [[0, 0, 0], [0, 2, 0], [0, 2, 0], [0, 2, 0], [0, 0, 0]],

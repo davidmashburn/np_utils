@@ -246,6 +246,37 @@ def rec_groupby(a, keynames, *fun_fields_name):
     names = [i[-1] for i in fun_fields_name]
     return np_groupby(keyarr, a, *functions, names=keynames + names)
 
+def get_first_indices(arr, values, missing=None):
+    '''Get the index of the first occurrence of the list of values in
+       the (flattened) array
+       
+       The missing argument determines how missing values are handled:
+       None: ignore them, leave them None
+       -1: make them all -1
+       'len': replace them with the length of the array (aka outside the array)
+       'fail': throw an error'''
+    bad_str = """Bad value for "missing", choose one of: None, -1, 'len', 'fail'"""
+    assert missing in [None, -1, 'len', 'fail'], bad_str
+    arr = np.asanyarray(arr)
+    
+    keys, index_groups = get_index_groups(arr)
+    first_inds = dict(zip(keys, [i[0] for i in index_groups]))
+    inds = map(first_inds.get, values)
+    
+    if missing == 'fail' and None in inds:
+        raise Exception('Value Error! One of the values is not in arr')
+    elif missing == 'len':
+        default = arr.size
+    elif missing == -1:
+        default = -1
+    else:
+        default = None
+    
+    if default is not None:
+        inds = [default if i is None else i for i in inds]
+    
+    return np.array(inds)
+
 def limitInteriorPoints(l,numInteriorPoints,uniqueOnly=True):
     '''return the list l with only the endpoints and a few interior points (uniqueOnly will duplicate if too few points)'''
     inds = np.linspace(0,len(l)-1,numInteriorPoints+2).round().astype(np.integer)
