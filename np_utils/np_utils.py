@@ -363,7 +363,7 @@ def addBorder(arr,borderValue=0,borderThickness=1,axis=None):
     arrNew[sl] = arr
     return arrNew
 
-def shape_multiply(arr,shapeMultiplier, oddOnly=False, adjustFunction=None):
+def shape_multiply(arr, shapeMultiplier, oddOnly=False, adjustFunction=None):
     '''Works like tile except that it keeps all like elements clumped
        Essentially a non-interpolating, multi-dimensional image up-scaler'''
     # really only 7 lines without checks...
@@ -407,6 +407,30 @@ def shape_multiply_zero_fill(arr,shapeMultiplier):
         #c = np.zeros(shm,arr.dtype)
         #c[tuple([(i//2) for i in shm])]=1
     return shape_multiply(arr,shapeMultiplier,oddOnly=True,adjustFunction=zeroFill)
+
+def reshape_repeating(arr, new_shape):
+    """A forgiving version of np.reshape that allows the resulting
+    array size to be larger or smaller than the original
+    When the new size is larger, values are filled by repeating the original (flattened) array
+    A smaller or equal size always returns a view.
+    A larger size always returns a copy.
+    """
+    arr_flat = arr.reshape(arr.size)
+    new_shape = (new_shape,) if not hasattr(new_shape, '__iter__') else new_shape
+    new_size = np.prod(new_shape)
+    if new_size <= arr.size:
+        return arr_flat[:new_size].reshape(new_shape)
+    else:
+        repeats = np.ceil(new_size / arr.size)
+        s = np.lib.stride_tricks.as_strided(arr_flat, (repeats, arr.size), (0, arr.itemsize))
+        assert arr_flat.base is arr
+        assert s.base.base is arr_flat
+        assert s.flat.base is s
+        f = s.flat[:new_size] # This final slicing op is the first time a new array is created... hmmm
+        assert f.base is None # poo
+        r = f.reshape(new_shape)
+        assert r.base is f
+        return r
 
 def interpNaNs(a):
     '''Changes the underlying array to get rid of NaN values
@@ -657,3 +681,12 @@ def build_grid(center, steps, nsteps):
     return np.meshgrid(*[np.linspace(c-(n-1.)/2 * s, c+(n-1.)/2 * s, n)
                          for c, s, n in zip(center, steps, nsteps)],
                        indexing='ij')
+
+def reverse_broadcast(f):
+    """Change a function to use "reverse broadcasting"
+    which amounts to calling np.transpose on all arguments and again on the output.
+    """
+    newf = g_inv_f_g(f, np.transpose)
+    newf.__doc__ = '\n'.join(['Transpose the arguments before and after running the function f:',
+                             f.__doc__])
+    return newf

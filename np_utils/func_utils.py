@@ -154,6 +154,25 @@ def constf(value):
            f(1,5,a=6) -> 10'''
     return lambda *args,**kwds: value
 
+def g_inv_f_g(f, g, g_inv=None):
+    """Transform function f using the function g and its inverse g_inv:
+    So, newf === g_inv(f(g))
+    or more precisely:
+    newf(*args , *kwds) === g_inv(f(*map(g, args), **kwds))
+    
+    By default, g is assumed to be its own inverse (g_inv=None)
+    g is applied to all arguments of the new function before passing them to f
+    
+    This function intentionally does not handle doc strings; they should
+    be handled manually instead.
+    """
+    g_inv = g if g_inv is None else g_inv
+    def newf(*args, **kwds):
+        new_args = map(g, args)
+        return g_inv(f(*new_args, **kwds))
+    
+    return newf
+
 def multicall(funs, *args, **kwds):
     '''Call multiple functions with the same arguments
        Essentially like map, but swapping the roles of functions and arguments

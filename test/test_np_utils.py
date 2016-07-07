@@ -187,6 +187,24 @@ def test_addBorder_axism1():
          [[0, 2, 0], [0, 2, 0], [0, 2, 0]]]
     assert np.all( addBorder(2*np.ones([2,3,1]),axis=-1) == v )
 
+def test_reshape_repeating_1():
+    '''Might be worth refactoring this into smaller tests'''
+    a = np.arange(100)
+    assert np.all(reshape_repeating(a, 10) == a[:10])
+    assert np.all(reshape_repeating(a, 1000) == np.tile(a, 10))
+    fif = reshape_repeating(a, (50, 50))
+    assert np.all(fif[::2] == np.arange(50))
+    assert np.all(fif[1::2] == np.arange(50, 100))
+    b = reshape_repeating(a, 100)
+    c = reshape_repeating(a, (10,10))
+    a[-1] = 6
+    assert c[-1, -1] == 6
+    assert reshape_repeating(a, 100).base is a
+    assert reshape_repeating(a, (10, 10)).base is a
+    assert reshape_repeating(a, 99).base is a
+    assert reshape_repeating(a, (4, 5)).base is a
+    assert reshape_repeating(a, (10,11)).base.base is None
+
 def test_limitInteriorPoints_r5_0_True():
     assert limitInteriorPoints(range(5),0,uniqueOnly=True) == [0,4]
 
@@ -312,6 +330,12 @@ def test_build_grid_C():
     assert np.all(np.isclose(build_grid((0,1),(1,4.1),(3,3)),
                   [[[-1,-1,-1],[0,0,0],[1,1,1]],[[-3.1,1,5.1]]*3]))
 
+def test_reverse_broadcast_1():
+    assert np.all(
+        reverse_broadcast(np.add)([100,200], np.arange(6).reshape(2,3)) ==
+        np.array([[100, 101, 102], [203, 204, 205]])
+    )
+
 #Not tested yet
 #def GetDirectionsOfSteepestSlope_BorderCheckingVersion(borderPts):
 
@@ -354,6 +378,7 @@ if __name__ == '__main__':
     test_addBorder_5()
     test_addBorder_axis1()
     test_addBorder_axism1()
+    test_reshape_repeating_1()
     test_limitInteriorPoints_r5_0_True()
     test_limitInteriorPoints_r5_2_True()
     test_limitInteriorPoints_r5_7_True()
@@ -391,3 +416,4 @@ if __name__ == '__main__':
     test_build_grid_A()
     test_build_grid_B()
     test_build_grid_C()
+    test_reverse_broadcast_1()
