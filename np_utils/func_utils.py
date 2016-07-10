@@ -284,7 +284,7 @@ def flipargs(f):
     '''Generator that changes a function to take its arguments in reverse'''
     @wraps(f)
     def newf(*args, **kwds):
-        return f(*reverse(args), **kwds)
+        return f(*reversed(args), **kwds)
     
     # Add a note about the args being flipped to the doc string
     newf.__doc__ = 'Arguments reversed:\n\n' + newf.__doc__

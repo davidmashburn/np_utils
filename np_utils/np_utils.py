@@ -17,6 +17,10 @@ from list_utils import totuple, flatten, zipflat, assertSameAndCondense, split_a
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
 
+def _iterize(x):
+    '''Ensure that x is iterable or wrap it in a tuple'''
+    return x if hasattr(x, '__iter__') else (x,)
+
 def haselement(arr,subarr):
     '''Test if subarr is equal to one of the elements of arr.
        This is the equivalent of the "in" operator when using lists instead of arrays.'''
@@ -64,6 +68,16 @@ def map_along_axis(f, axis, arr):
     arr = np.asanyarray(arr)
     new_dim_order = [axis] + range(axis) + range(axis+1,arr.ndim)
     return np.array([f(a) for a in arr.transpose(new_dim_order)])
+
+def remove_duplicate_subarrays(arr):
+    '''Order preserving duplicate removal for arrays.
+       Modified version of code found here:
+       http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+       Relies on hashing the string of the subarray, which *should* be fine...'''
+    seen = set()
+    return np.array([i for i in arr
+                     for s in (i.tostring(),)
+                     if s not in seen and not seen.add(s)])
 
 def fields_view(arr, fields):
     '''Select fields from a record array without a copy
@@ -302,6 +316,19 @@ def linrange(start, step, length):
 #def linrange_OLD(start, step, length):
 #    return np.arange(start, start + step * (length - 0.5), step) # More efficient, but more complicated too
 
+def concatenate_broadcasting(*arrs, **kwds):
+    '''Broadcasting (i.e. forgiving) version or concatenate
+    axis is passed to concatenate (default 0)
+    other kwds are passed to broadcast_arrays (subok in new version of numpy)
+    
+    Docs for concatenate:
+    '''
+    axis = kwds.pop('axis', 0)
+    return np.concatenate(np.broadcast_arrays(*arrs, **kwds), axis=axis)
+
+concatenate_broadcasting.__doc__ += np.concatenate.__doc__
+broad_cat = concatenate_broadcasting # alias
+
 def partitionNumpy(l,n):
     '''Like partition, but always clips and returns array, not list'''
     a=np.array(l)
@@ -415,8 +442,9 @@ def reshape_repeating(arr, new_shape):
     A smaller or equal size always returns a view.
     A larger size always returns a copy.
     """
+    arr = np.asanyarray(arr)
+    new_shape = _iterize(new_shape)
     arr_flat = arr.reshape(arr.size)
-    new_shape = (new_shape,) if not hasattr(new_shape, '__iter__') else new_shape
     new_size = np.prod(new_shape)
     if new_size <= arr.size:
         return arr_flat[:new_size].reshape(new_shape)
