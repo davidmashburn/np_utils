@@ -7,36 +7,7 @@ from copy import copy
 from collections import Counter
 import np_utils
 from np_utils import *
-
-cache = {}
-
-# Unused, but pretty useful function (and there was nowhere else to put it)
-def assert_index_groups_same(x, y):
-    assert np.array_equal(x[0], y[0])
-    assert len(x[1])==len(y[1])
-    for i, j in zip(x[1], y[1]):
-        try:
-            assert np.array_equal(i, j)
-        except:
-            print i, j
-            raise
-
-def _get_sample_rec_array():
-    '''Build a dummy record array to test with. Has fields m,n,o,p.
-       Cache the result as "cache['sample_recarray']" to save time.'''
-    if 'sample_recarray' in cache:
-        arr = cache['sample_recarray']
-    else:
-        l = 10000
-        ID = np.arange(l)
-        np.random.seed(0)
-        m = np.array([['This', 'That'][j] for j in np.random.randint(2, size=l)])
-        n = np.random.randint(100, size=l)
-        o = np.random.normal(loc=300, scale=100, size=l)
-        p = np.random.logistic(0, 20, size=l)
-        arr = np.rec.fromarrays([ID, m, n, o, p], names=list('imnop'))
-        cache['sample_recarray'] = arr
-    return arr
+from np_utils._test_helpers import _get_sample_rec_array
 
 def test_haselement_1A():
     assert haselement([1,2,3,4,1,2,3,5],3)
@@ -153,10 +124,6 @@ def test_get_first_indices_1():
     except:
         intentioned_fail = True
     assert intentioned_fail
-    
-
-test_get_first_indices_1()
-exit()
 
 def test_addBorder_0():
     v = [[[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
@@ -304,21 +271,6 @@ def test_polyPerimeter_closeLoop():
 def test_polyPerimeter_openLoop():
     assert polyPerimeter([[0,0],[0,5],[8,11],[0,11]],closeLoop=False)==23
 
-def test_GetDirectionsOfSteepestSlope_A():
-    assert GetDirectionsOfSteepestSlope([1,0,0],[0,2,0],[0,0,3])==[2,2,1]
-
-def test_GetDirectionsOfSteepestSlope_B():
-    assert GetDirectionsOfSteepestSlope([1,0,0],[0,2,0],[0,0,2])==[1,2,1]
-
-def test_GetDirectionsOfSteepestSlope_C():
-    assert GetDirectionsOfSteepestSlope([1,0,0,0],[0,2,0,0],[0,0,3,1])==[2,2,1,1]
-
-def test_GetDirectionsOfSteepestSlope_D():
-    assert GetDirectionsOfSteepestSlope([3,0,0,-4],[1,0,2,0],[1,2,2,0])==[1,3,1,1]
-
-def test_GetDirectionsOfSteepestSlope_E():
-    assert GetDirectionsOfSteepestSlope([0,0,0],[0,1,0],[1,2,0])==[1,0,None]
-
 def test_build_grid_A():
     assert build_grid((0.7,0.15),(10,11),(1,1)==[[[0.7]],[[0.15]]])
 
@@ -336,24 +288,6 @@ def test_reverse_broadcast_1():
         np.array([[100, 101, 102], [203, 204, 205]])
     )
 
-#Not tested yet
-#def GetDirectionsOfSteepestSlope_BorderCheckingVersion(borderPts):
-
-#Not tested yet
-#def BresenhamTriangle(p0,p1,p2): # Generalization for triangle
-
-#Not tested yet
-#def ImageCircle(r):
-
-#Not tested yet
-#def ImageSphere(r):
-
-#Not tested yet
-#def blitCircleToArray(arr,x,y,r,val):
-
-#Not tested yet
-#def blitSphereToArray(arr,x,y,z,r,val):
-
 if __name__ == '__main__':
     test_haselement_1A()
     test_haselement_1B()
@@ -364,7 +298,7 @@ if __name__ == '__main__':
     test_haselement_3A()
     test_haselement_3B()
     test_element_of_3D()
-    test_split_array_at_boundaries_1()
+    test_split_at_boundaries_1()
     test_np_groupby_1()
     test_np_groupby_2()
     test_np_groupby_3()
@@ -373,6 +307,7 @@ if __name__ == '__main__':
     test_rec_groupby_1()
     test_rec_groupby_2()
     test_rec_groupby_3()
+    test_get_first_indices_1()
     test_addBorder_0()
     test_addBorder_0_th2()
     test_addBorder_5()
@@ -408,11 +343,6 @@ if __name__ == '__main__':
     test_pointDistance_B()
     test_polyPerimeter_closeLoop()
     test_polyPerimeter_openLoop()
-    test_GetDirectionsOfSteepestSlope_A()
-    test_GetDirectionsOfSteepestSlope_B()
-    test_GetDirectionsOfSteepestSlope_C()
-    test_GetDirectionsOfSteepestSlope_D()
-    test_GetDirectionsOfSteepestSlope_E()
     test_build_grid_A()
     test_build_grid_B()
     test_build_grid_C()

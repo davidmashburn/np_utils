@@ -10,9 +10,11 @@ Notably:
     
     '''
 
+from __future__ import division
 import numpy as np
 
 from gen_utils import islistlike
+from func_utils import g_inv_f_g
 from list_utils import totuple, flatten, zipflat, assertSameAndCondense, split_at_boundaries
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
