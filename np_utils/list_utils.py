@@ -148,6 +148,16 @@ def removeDuplicates(l):
     return [ x for x in totuple(l)
                if x not in seen and not seen.add(x) ]
 
+def find_first_occurrence_in_list(l):
+    '''Find the first occurrence (index) of each unique element in l.
+       Modified version of code found here:
+       http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+       For arrays, use np_utils.find_first_occurrence or np_utils.find_first_occurrence_1d'''
+    seen = set()
+    return np.array([i for i, p in enumerate(l)
+                     for s in totuple(p)     # with s as totuple(a)   <-- would be this if python supported it
+                     if s not in seen and not seen.add(s)])
+
 def removeAdjacentDuplicates(l):
     '''Replace any groups of items with the same value with a single occurrence instead.
        Ex:
@@ -268,9 +278,9 @@ def groupByFunction(l,f,appendFun=None):
        from itertools import groupby, imap
        if appendFun==None:
            return { k:list(v) for k,v in groupby(l,f) }
-        else:
-            return { k:list(imap(appendFun,v)) for k,v in groupby(l,f) }
-        I may change this in a future version after testing it more.
+       else:
+           return { k:list(imap(appendFun,v)) for k,v in groupby(l,f) }
+       I may change this in a future version after testing it more.
        '''
     groupDict = {}
     for i in l:

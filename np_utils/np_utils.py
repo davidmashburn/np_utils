@@ -11,6 +11,7 @@ Notably:
     '''
 
 from __future__ import division
+from itertools import izip
 import numpy as np
 
 from gen_utils import islistlike
@@ -45,6 +46,17 @@ def multidot(*args):
     '''Multiply multiple arguments with np.dot:
        reduce(np.dot,args,1)'''
     return reduce(np.dot,args,1)
+
+def true_where(shape, true_locs):
+    """Return a new boolean array with the values at locations
+       "true_inds" set to True, and all others False
+       This function is the inverse of np.where for boolean arrays:
+       true_where(bool_arr.shape, np.where(bool_arr)) == bool_arr
+       or in general:
+       np.where(true_where(arr.shape, np.where(arr))) == np.where(arr)"""
+    bool_arr = np.zeros(shape, dtype=np.bool)
+    bool_arr[true_locs] = True
+    return bool_arr
 
 def map_along_axis(f, axis, arr):
     '''Apply a function to a specific axis of an array
@@ -127,7 +139,7 @@ def get_index_groups(arr):
              "flag" (isdiff here) to calculate the split_points directly and
              avoid calling np.bincount and then np.cumsum on inv'''
 
-    arr = np.asanyarray(arr).flatten()                                  # flat version of the array
+    arr = np.asanyarray(arr).ravel()                                    # flat version of the array
     sort_ind = arr.argsort()#kind='mergesort')                          # The indices of the array rearranged
     sort_arr = arr[sort_ind]                                            # such that arr[sort_ind] is the sorted array
     isdiff = np.concatenate(([True], sort_arr[1:] != sort_arr[:-1]))    # True if each element is different from its lefthand neighbor, False if it is the same
@@ -169,7 +181,7 @@ def get_array_subgroups(arr, grouping_arr):
        Then d[id] will be a subarray of arr where arr['foreign_id']==id'''
     assert len(arr) == len(grouping_arr), 'Arrays must have the same length!'
     keys, index_groups = get_index_groups(grouping_arr)
-    return {k: arr[inds] for k, inds in zip(keys, index_groups)}
+    return {k: arr[inds] for k, inds in izip(keys, index_groups)}
 
 def np_groupby(keyarr, arr, *functions, **kwds):
     '''A really simple, relatively fast groupby for numpy arrays.
@@ -262,6 +274,34 @@ def rec_groupby(a, keynames, *fun_fields_name):
     names = [i[-1] for i in fun_fields_name]
     return np_groupby(keyarr, a, *functions, names=keynames + names)
 
+def find_first_occurrence(arr):
+    '''Find the first occurrence (index) of each unique value (subarray) in arr.
+       Modified version of code found here:
+       http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+       Relies on hashing the string of the subarray, which *should* be fine...
+       For non-array iterables, use list_utils.find_first_occurrence_in_list'''
+    arr = np.asanyarray(arr)
+    seen = set()
+    return np.array([i for i, a in enumerate(arr)
+                     for s in (a.tostring(),)     # with s as a.tostring()   <-- would be this if python supported it
+                     if s not in seen and not seen.add(s)])
+
+def find_first_occurrence_1d(arr, get_keys=True):
+    '''Equivalent to find_first_occurrence(arr.ravel()), but should be much faster
+       (uses the very fast get_index_groups function)'''
+    keys, index_groups = get_index_groups(arr)
+    first_occurrences = map(np.min, index_groups)
+    return (keys, first_occurrences) if get_keys else first_occurrences
+
+def is_first_occurrence(arr):
+    '''For each sub-array arr, whether or not this is equivalent to another
+       subarray with a lower index'''
+    return true_where(len(arr), find_first_occurrence(arr))
+
+def is_first_occurrence_1d(arr):
+    '''Flattening version of is_first_occurrence (uses find_first_occurrence_1d)'''
+    return true_where(np.size(arr), find_first_occurrence_1d(arr, get_keys=False))
+
 def get_first_indices(arr, values, missing=None):
     '''Get the index of the first occurrence of the list of values in
        the (flattened) array
@@ -275,8 +315,7 @@ def get_first_indices(arr, values, missing=None):
     assert missing in [None, -1, 'len', 'fail'], bad_str
     arr = np.asanyarray(arr)
     
-    keys, index_groups = get_index_groups(arr)
-    first_inds = dict(zip(keys, [i[0] for i in index_groups]))
+    first_inds = dict(izip(*find_first_occurrence_1d(arr)))
     inds = map(first_inds.get, values)
     
     if missing == 'fail' and None in inds:

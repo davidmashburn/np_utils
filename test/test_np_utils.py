@@ -33,8 +33,23 @@ def test_haselement_3A():
 def test_haselement_3B():
     assert not haselement([[[1,2,3,4]],[[1,2,3,5]]],[[1,2,3,4],[1,2,3,5]])
 
-def test_element_of_3D():
+def test_haselement_3D():
     assert not haselement( [[[1,2,3,4],[5,6,7,8]],[[1,2,3,5],[10,12,14,15]]], [[1,2,3,4],[10,12,14,15]] )
+
+def test_true_where_1():
+    assert np.array_equal(true_where(4, [0, 2]),
+                          [1, 0, 1, 0])
+    assert np.array_equal(true_where([4] * 2, [range(4)] * 2),
+                          np.eye(4))
+
+def test_true_where_2():
+    np.random.seed(0)
+    arr = np.random.rand(2, 3, 4)
+    bool_arr = (arr < 0.5)
+    assert np.array_equal(true_where(bool_arr.shape, np.where(bool_arr)),
+                          bool_arr)
+    assert np.array_equal(np.where(true_where(arr.shape, np.where(arr))),
+                          np.where(arr))
 
 def test_split_at_boundaries_1(): # test for arrays as well
     x = np.array([0, 3, 8, 6, 5, 9, 8, 9, 9, 2])
@@ -110,6 +125,29 @@ def test_rec_groupby_3():
                      names=['m', 'n', 'its_complicated'])
     
     assert np.all(g_r == g_n)
+
+_is_first_occurrence_1_dat = [[0, 1, 0, 1, 0, 2, 3, 4],
+                              [1, 1, 0, 0, 0, 1, 1, 1]]
+
+def test_is_first_occurrence_1():
+    a, b = _is_first_occurrence_1_dat
+    assert np.array_equal(is_first_occurrence(a), b)
+
+def test_is_first_occurrence_1d_1():
+    a, b = _is_first_occurrence_1_dat
+    assert np.array_equal(is_first_occurrence_1d(a), b)
+
+def test_is_first_occurrence_2():
+    assert np.array_equal(is_first_occurrence([[[0,1]], [[0,1]], [[0,2]],[[0,1]], [[1,1]]]),
+                          [1,0,1,0,1])
+
+def test_is_first_occurrence_and_1d_3():
+    def stupid_version(x):
+        return np.array([(p not in x[:i]) for i,p in enumerate(x)]) # This will work, but is very slow
+
+    t = reshape_repeating(np.arange(6), (40,3))
+    assert np.array_equal(stupid_version(t), is_first_occurrence(t))
+    assert np.array_equal(is_first_occurrence(t.ravel()), is_first_occurrence_1d(t))
 
 def test_get_first_indices_1():
     a = [0,1,2,3,3,4,5,12,4,8]
@@ -297,7 +335,9 @@ if __name__ == '__main__':
     test_haselement_2C()
     test_haselement_3A()
     test_haselement_3B()
-    test_element_of_3D()
+    test_haselement_3D()
+    test_true_where_1()
+    test_true_where_2()
     test_split_at_boundaries_1()
     test_np_groupby_1()
     test_np_groupby_2()
@@ -307,6 +347,10 @@ if __name__ == '__main__':
     test_rec_groupby_1()
     test_rec_groupby_2()
     test_rec_groupby_3()
+    test_is_first_occurrence_1()
+    test_is_first_occurrence_1d_1()
+    test_is_first_occurrence_2()
+    test_is_first_occurrence_and_1d_3()
     test_get_first_indices_1()
     test_addBorder_0()
     test_addBorder_0_th2()
