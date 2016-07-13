@@ -326,6 +326,20 @@ def test_reverse_broadcast_1():
         np.array([[100, 101, 102], [203, 204, 205]])
     )
 
+def test_box_1():
+    a = np.arange(10)
+    aaa = np.arange(24).reshape([2, 3, 4])
+    assert np.array_equal(box(a)[0], a)
+    assert np.array_equal(box(a, 1)[0], np.array(0))
+    assert np.array_equal(box(aaa, 0)[0], aaa)
+    assert np.array_equal(box(aaa, 1)[0], aaa[0])
+    assert np.array_equal(box(aaa, 2)[0, 0], aaa[0, 0])
+    assert np.array_equal(box(aaa, 3)[0, 0, 0], aaa[0, 0, 0])
+    assert box(aaa, 0).shape == (1,)
+    assert box(aaa, 1).shape == (2,)
+    assert box(aaa, 2).shape == (2, 3)
+    assert box(aaa, 3).shape == (2, 3, 4)
+
 if __name__ == '__main__':
     test_haselement_1A()
     test_haselement_1B()
@@ -391,3 +405,4 @@ if __name__ == '__main__':
     test_build_grid_B()
     test_build_grid_C()
     test_reverse_broadcast_1()
+    test_box_1()

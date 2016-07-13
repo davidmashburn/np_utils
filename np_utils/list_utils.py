@@ -31,44 +31,64 @@ from collections import Counter
 ## Nested structure conversion ##
 #################################
 
-def totuple(a):
+def totuple(a, break_strings=True):
     '''Makes tuples out of nested datastructures like lists and arrays.
-       Authored by Bi Rico, http://stackoverflow.com/questions/10016352/convert-numpy-array-to-tuple'''
+       Modified version of algorithm by Bi Rico:
+       http://stackoverflow.com/questions/10016352/convert-numpy-array-to-tuple
+       Modified to handle strings without throwing recursion errors
+       (since 'a'[0] == 'a')
+       
+       By default, uses break_strings=True, same handling as tuple itself:
+       totuple('abcdef') == totuple('abcdef') == ('a', 'b', 'c', 'd', 'e', 'f')
+       
+       Using break_strings=False leaves larger strings alone:
+       totuple('abcdef', break_strings=False) == 'abcdef'
+       
+       totuple is especially effective for creating hashable structures
+       for use in dict and set'''
+    if isinstance(a, basestring) and (len(a) == 1 or not break_strings):
+        return a
     try:
-        return tuple(totuple(i) for i in a)
+        return tuple(totuple(i, break_strings) for i in a)
     except TypeError: # dig until we can dig no more!
         return a
 
-def makeTuple(a):
+def makeTuple(a, break_strings=True):
     '''Like totuple, but ensures that you get a tuple out.'''
-    retVal = totuple(a)
+    retVal = totuple(a, break_strings)
     return ( retVal if retVal.__class__==tuple else (retVal,) )
 
-def tolist(a):
-    '''Makes lists out of nested datastructures like tuples,lists, and arrays.
-       Based on totuple.'''
+def tolist(a, break_strings=True):
+    '''Makes lists out of nested datastructures like tuples, lists, and arrays.
+       Based on totuple, see docs for more information.'''
+    if isinstance(a, basestring) and (len(a) == 1 or not break_strings):
+        return a
     try:
-        return [ tolist(i) for i in a ]
+        return [tolist(i, break_strings) for i in a]
     except TypeError:
         return a
 
-def iterToX(f,iterable):
+def iterToX(f, iterable, break_strings=True):
     '''Generalized version of tolist/totuple.
        Replace all iterables in a nested structure with another type (X) using
        the constructor function "f".
        "f" must take an iterable as it's argument.'''
+    if isinstance(iterable, basestring) and (len(iterable) == 1 or not break_strings):
+        return iterable
     try:
-        return f([iterToX(f,i) for i in iterable])
+        return f([iterToX(f, i, break_strings) for i in iterable])
     except TypeError:
         return iterable
 
-def iterToX_splat(f,iterable):
+def iterToX_splat(f, iterable, break_strings=True):
     '''Generalized version of tolist/totuple.
        Replace all iterables in a nested structure with another type using
        the constructor function "f" that takes multiple arguments.
        "f" must take multiple arguments, like sympy.Tuple, for example.'''
+    if isinstance(iterable, basestring) and (len(iterable) == 1 or not break_strings):
+        return iterable
     try:
-        return f(*[iterToX_splat(f,i) for i in iterable])
+        return f(*[iterToX_splat(f, i, break_strings) for i in iterable])
     except TypeError:
         return iterable
 
@@ -177,6 +197,12 @@ def partition(l,n,clip=True):
        clip chops off whatever does not fit into n-sized chunks at the end'''
     length = ( len(l)//n*n if clip else len(l) ) # //n*n is a clipping operation...NOT /n**2
     return [l[i:i+n] for i in range(0,length,n)]
+
+def split_at(l, i):
+    '''Split a list into the parts before and after i
+       Literally just returns l[:i], l[i:]
+       For more complex scenarios, use something like split_at_boundaries'''
+    return l[:i], l[i:]
 
 def split_at_boundaries(l, boundaries):
     '''Split a list at the boundaries (which must be a sorted list)

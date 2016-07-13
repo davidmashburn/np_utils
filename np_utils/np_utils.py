@@ -16,7 +16,7 @@ import numpy as np
 
 from gen_utils import islistlike
 from func_utils import g_inv_f_g
-from list_utils import totuple, flatten, zipflat, assertSameAndCondense, split_at_boundaries
+from list_utils import totuple, flatten, zipflat, assertSameAndCondense, split_at, split_at_boundaries
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
 
@@ -759,3 +759,15 @@ def reverse_broadcast(f):
     newf.__doc__ = '\n'.join(['Transpose the arguments before and after running the function f:',
                              f.__doc__])
     return newf
+
+def box(arr, depth=0):
+    '''Make nested array of arrays from an existing array
+       depth=0 specifies the point at which to split the outer ar'''
+    box_shape, inner_shape = split_at(np.shape(arr), depth)
+    box_shape = box_shape if depth else (1,)
+    boxed = np.empty(box_shape, dtype=np.object)
+    boxed_flat = boxed.ravel()
+    arr_flat = np.reshape(arr, (-1,) + inner_shape)
+    boxed_flat[:] = [np.asanyarray(arr_flat[i])
+                   for i in range(len(boxed_flat))]
+    return boxed
