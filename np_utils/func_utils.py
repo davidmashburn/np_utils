@@ -89,6 +89,25 @@ def kwdPop(kwds,key,defaultValue):
     return kwds.pop(key, defaultValue)
     #( kwds.pop(key) if key in kwds else defaultValue )
 
+def add_kwd_defaults(old_kwds, **kwds):
+    '''Hack to allow defaults to be set inside the function instead of
+       in the function header
+       
+       Example usage where g gets called inside f with the same args:
+       def f(a=5, b=6, c=7, flag=-1, verbose=True):
+           return g(a=a, b=b, a=5, b=b, c=c, flag=flag, verbose=verbose)
+       
+       using add_kwd_defaults becomes:
+       
+       def f(**kwds)
+           kwds = add_kwd_defaults(kwds, a=5, b=6, c=7, flag=-1, verbose=True)
+           return g(**kwds)
+       
+       Most useful in "middle-man" functions that have lots of kwds
+       and need to change a small number of defaults'''
+    kwds.update(old_kwds)
+    return kwds
+
 def docAppend(newFun,oldFun):
     '''Append oldFun's docstring to the end of newFun's docstring
        Useful for quick documentation of functional modifications'''
