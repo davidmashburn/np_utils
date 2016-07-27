@@ -18,6 +18,13 @@ from gen_utils import islistlike
 from func_utils import g_inv_f_g
 from list_utils import totuple, flatten, zipflat, assertSameAndCondense, split_at, split_at_boundaries
 
+from distutils.version import StrictVersion
+if StrictVersion(np.__version__) < StrictVersion('1.11.0'):
+    from np_future import broadcast_arrays
+else:
+    from numpy import broadcast_arrays
+
+
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
 
 def _iterize(x):
@@ -40,12 +47,13 @@ def haselement(arr,subarr):
 
 def np_has_duplicates(arr):
     '''For a 1D array, test whether there are any duplicated elements.'''
-    return len(arr) > len(np.unique(arr))
+    arr = np.asanyarray(arr)
+    return arr.size > np.unique(arr).size
 
 def multidot(*args):
     '''Multiply multiple arguments with np.dot:
-       reduce(np.dot,args,1)'''
-    return reduce(np.dot,args,1)
+       reduce(np.dot, args, 1)'''
+    return reduce(np.dot, args, 1)
 
 def true_where(shape, true_locs):
     """Return a new boolean array with the values at locations
@@ -58,7 +66,23 @@ def true_where(shape, true_locs):
     bool_arr[true_locs] = True
     return bool_arr
 
-def map_along_axis(f, axis, arr):
+def ravel_at_depth(arr, depth=0):
+    '''Ravel subarrays at some depth of arr
+       The default, depth=0, is equivalent to arr.ravel()'''
+    arr = np.asanyarray(arr)
+    return arr.reshape(arr.shape[:depth] + (-1,))
+
+def apply_at_depth_ravel(f, arr, depth=0):
+    '''Take an array and any single-array-based
+       associative function with an axis argument
+       (sum, product, max, cumsum, etc)
+       and apply f to the ravel of arr at a particular depth
+       This means f will act on arrays (N-depth)D arrays.
+       This is very efficient when acting on numpy ufuncs, much more so than the
+       generic "apply_at_depth" function below.'''
+    return f(ravel_at_depth(arr, depth=depth), axis=-1)
+
+def map_along_axis(f, arr, axis):
     '''Apply a function to a specific axis of an array
        This is slightly different from np.apply_along_axis when used
        in more than 2 dimensions.
@@ -73,14 +97,15 @@ def map_along_axis(f, axis, arr):
                [2, 3]],
               [[4, 5],
                [6, 7]]])
-       >>> np.apply_along_axis(np.sum, 1, arr)
+       >>> np.apply_along_axis(np.sum, arr, 1)
        array([[ 2,  4],
               [10, 12]])
-       >>> map_along_axis(np.sum, 1, arr)
+       >>> map_along_axis(np.sum, arr, 1)
        array([10, 18])
     '''
     arr = np.asanyarray(arr)
-    new_dim_order = [axis] + range(axis) + range(axis+1,arr.ndim)
+    axis = axis + arr.ndim if axis < 0 else axis
+    new_dim_order = [axis] + range(axis) + range(axis+1, arr.ndim)
     return np.array([f(a) for a in arr.transpose(new_dim_order)])
 
 def remove_duplicate_subarrays(arr):
@@ -393,7 +418,7 @@ def get_first_indices(arr, values, missing=None):
 
 def limitInteriorPoints(l,numInteriorPoints,uniqueOnly=True):
     '''return the list l with only the endpoints and a few interior points (uniqueOnly will duplicate if too few points)'''
-    inds = np.linspace(0,len(l)-1,numInteriorPoints+2).round().astype(np.integer)
+    inds = np.linspace(0, len(l)-1, numInteriorPoints + 2).round().astype(np.integer)
     if uniqueOnly:
         inds = np.unique(inds)
     return [ l[i] for i in inds ]
@@ -431,9 +456,8 @@ broad_cat = concatenate_broadcasting # alias
 
 def partitionNumpy(l,n):
     '''Like partition, but always clips and returns array, not list'''
-    a=np.array(l)
-    a.resize(len(l)//n,n)
-    return a
+    a = np.asanyarray(l)
+    return a.reshape([len(l) // n, n])
 
 def shapeShift(arr,newShape,offset=None,fillValue=0):
     '''Create a new array with a specified shape and element value
@@ -453,7 +477,7 @@ def shapeShift(arr,newShape,offset=None,fillValue=0):
        A more accurate name for this might be "copyDataToArrayOfNewSize", but
        "shapeShift" is much easier to remember (and cooler).
        '''
-    oldArr = np.asarray(arr)
+    oldArr = np.asanyarray(arr)
     newArr = np.zeros(newShape,dtype=oldArr.dtype)+fillValue
     oldShape,newShape = np.array(oldArr.shape), np.array(newArr.shape)
     offset = ( 0*oldShape if offset==None else np.array(offset) )
@@ -522,8 +546,8 @@ def shape_multiply(arr, shapeMultiplier, oddOnly=False, adjustFunction=None):
     return t.reshape(*[sh[i]*shm[i] for i in range(ndim)])
 
 def shape_multiply_zero_fill(arr,shapeMultiplier):
-    '''Same as shape_muliply, but requires odd values for\n'''
-    '''shapeMultiplier and fills around original element with zeros.'''
+    '''Same as shape_muliply, but requires odd values for
+       shapeMultiplier and fills around original element with zeros.'''
     def zeroFill(t,arr,shm):
         ndim=arr.ndim
         t*=0
@@ -919,7 +943,12 @@ def apply_at_depth(f, *args, **kwds):
     #print f(*boxed)
     #exit()
     print box_list[0]
-    br_box_list = np.broadcast_arrays(*box_list) #reshape all boxes to be the same shape
+    print 'bl', box_list
+    
+    #reshape all boxes to be the same shape
+    br_box_list = (broadcast_arrays(*box_list)
+                   if len(box_list) > 1 else
+                   box_list)
     #assertSameAndCondense(map(np.shape, box_list))
     br_box_shape = br_box_list[0].shape
     br_box_size = br_box_list[0].size
@@ -932,12 +961,17 @@ def apply_at_depth(f, *args, **kwds):
     res_arr = np.array(res_list)
     return res_arr.reshape(br_box_shape[1:]+res_arr.shape[1:])
 
-s = np.sum(box(np.arange(24).reshape([2,3,4])))
+a = np.arange(24).reshape([2,3,4])
+s = np.sum(box(a))
 print s.__class__
 print s.shape
 print s
-print apply_at_depth(np.sum, np.arange(24).reshape([2,3,4]), depths=2)
-print apply_at_depth(np.add, np.arange(24).reshape([2,3,4]), np.array([1]), depths=0)
+for depths in [0]+range(-4,4):
+    print depths
+    print apply_at_depth(np.sum, a, depths=depths)
+for depths in [0] + range(-4,4):
+    print 'd', depths
+    print apply_at_depth(np.add, a, np.array([1]), depths=depths)
 exit()
 
 def unbox_box_test(arr, depth=0):
