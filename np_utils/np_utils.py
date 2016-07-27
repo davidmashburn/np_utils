@@ -417,7 +417,7 @@ def linrange(start, step, length):
 #    return np.arange(start, start + step * (length - 0.5), step) # More efficient, but more complicated too
 
 def concatenate_broadcasting(*arrs, **kwds):
-    '''Broadcasting (i.e. forgiving) version or concatenate
+    '''Broadcasting (i.e. forgiving) version of concatenate
     axis is passed to concatenate (default 0)
     other kwds are passed to broadcast_arrays (subok in new version of numpy)
     
@@ -819,6 +819,16 @@ def reverse_broadcast(f):
                              f.__doc__])
     return newf
 
+def box_list(l, box_shape=None):
+    '''Convert a list to boxes (object array of arrays)
+       with shape optionally specified by box_shape'''
+    box_shape = len(l) if box_shape is None else box_shape
+    assert np.prod(box_shape) == len(l), 'shape must match the length of l'''
+    boxed = np.empty(box_shape, dtype=np.object)
+    boxed_flat = boxed.ravel()
+    boxed_flat[:] = map(np.asanyarray, l)
+    return boxed
+
 def box(arr, depth=0):
     '''Make nested array of arrays from an existing array
        depth=0 specifies the point at which to split the outer ar'''
@@ -828,5 +838,5 @@ def box(arr, depth=0):
     boxed_flat = boxed.ravel()
     arr_flat = np.reshape(arr, (-1,) + inner_shape)
     boxed_flat[:] = [np.asanyarray(arr_flat[i])
-                   for i in range(len(boxed_flat))]
+                     for i in range(len(boxed_flat))]
     return boxed
