@@ -110,6 +110,40 @@ def _split_records(arr):
     else:
         return [arr[name] for name in arr.dtype.names]
 
+def _index_helper(arr, sort_arr):
+    '''Compute some basic things needed for indexing functions below
+       Inputs
+       arr:      Any flat array
+       sort_arr: Sorted version of arr
+       
+       Returns
+       isdiff:       Boolean array with same length as arr
+                     True if each element is different from its lefthand
+                     False if it is the same
+                     (called "flag" in np.unique)
+       
+       keys:         Unique values of arr (sorted)
+       
+       split_points: Locations where the isdiff is True
+                     (or where the sorted array has change points)
+                     This is what makes it possible to determine the
+                     size of each group'''
+    isdiff = np.concatenate(([True], sort_arr[1:] != sort_arr[:-1]))
+    keys = sort_arr[isdiff]
+    split_points = np.flatnonzero(isdiff)
+    return isdiff, keys, split_points
+    
+
+def group_count(arr, use_argsort=False):
+    '''Get the count of all the groups in the array
+       This is much faster than what could be acheived using the tools below,
+       i.e. map(len, get_index_groups(arr)[0])'''
+    arr = np.ravel(arr)
+    sort_arr = np.sort(arr)
+    isdiff, keys, split_points = _index_helper(arr, sort_arr)
+    counts = np.diff(np.concatenate((split_points, [arr.size])))
+    return keys, counts
+
 def get_index_groups(arr):
     '''For a 1D array, get all unique values (keys)
        and the locations of each value in the original array (index_groups).
@@ -125,30 +159,55 @@ def get_index_groups(arr):
        which would be equivalent to this pseudo-sql:
            select count(x) from arr group by x
        
-       The algorithm is as follows:
-       * Form a list of the unique "keys"
-       * Replace every value in the array with an index into the unique keys, "inv"
-       (keys and inv are calculated using the exact same technique as np.unique)
-       * Determine the locations where the sorted array changes values (split_points)
+       The algorithm can be summarized as follows:
+       * Form a list of unique values (keys)
+       
+       * Find the locations where the sorted array changes values (split_points)
+       
+       * Replace every value in arr with an index into the unique keys (inv)
+         - keys and inv are calculated in the exact same way as in np.unique
+       
        * Argsort "inv" to cluster the indices of arr into groups and
          split these groups at the split points
          These indices will then be indices for the original values as well since
          the positions of elements in "inv" represent values in "arr"
 
-       Note: The reason for not just calling "np.unique" is that we can reuse
-             "flag" (isdiff here) to calculate the split_points directly and
-             avoid calling np.bincount and then np.cumsum on inv'''
-
-    arr = np.asanyarray(arr).ravel()                                    # flat version of the array
-    sort_ind = arr.argsort()#kind='mergesort')                          # The indices of the array rearranged
-    sort_arr = arr[sort_ind]                                            # such that arr[sort_ind] is the sorted array
-    isdiff = np.concatenate(([True], sort_arr[1:] != sort_arr[:-1]))    # True if each element is different from its lefthand neighbor, False if it is the same
-    keys = sort_arr[isdiff]                                             # The unique values in the array
-    sorted_key_inds = np.cumsum(isdiff) - 1                             # A list the unique value's indices in keys (so just 0-n) repeated the number of times if occurs in the array
-    inv = np.empty(arr.shape, dtype=np.intp)                            # The inverse mapping from unique to arr -- a list
-    inv[sort_ind] = sorted_key_inds                                     # of the indices of uniq such that keys[inv] == arr
-    split_points = np.nonzero(isdiff)[0]                                # the locations where the array has change points
-    index_groups = split_at_boundaries(np.argsort(inv), split_points)   # cluster indices of arr into groups based on keys and then split index groups according to split points
+       Note: The reason for using _index_base (above) instead of "np.unique"
+             is that we can reuse "flag" (isdiff here) to calculate the
+             split_points directly and avoid calling np.bincount and
+             then np.cumsum on inv
+       
+       Internal variable details:
+       sort_ind:        Argsort of arr -- indices of the array rearranged such
+                                          that arr[sort_ind] == np.sort(arr)
+       
+       sort_arr:        Sorted version of arr
+       
+       sorted_key_inds: A list the unique value's indices in keys (so just 0-n)
+                        repeated the number of times if occurs in the array
+       
+       inv:             The inverse mapping from unique to arr, an array
+                        of the indices of keys such that keys[inv] == arr
+                        (same as the optional return value from np.unique)
+                        
+                        Note that np.argsort(inv) gives the indices of arr
+                        sorted into groups based on keys; a 1d array where
+                        indices in the same group are "clustered" contiguously
+       
+       index_groups:    The indices of arr grouped into list of arrays
+                        where each group (array) matches a specific key
+                        This property will then be true:
+                        np.all(arr[index_groups[i]] == keys[i])
+       
+    '''
+    arr = np.ravel(arr)
+    sort_ind = np.argsort(arr) #,kind='mergesort')
+    sort_arr = arr[sort_ind]
+    isdiff, keys, split_points = _index_helper(arr, sort_arr)
+    sorted_key_inds = np.cumsum(isdiff) - 1
+    inv = np.empty(arr.shape, dtype=np.intp)
+    inv[sort_ind] = sorted_key_inds
+    index_groups = split_at_boundaries(np.argsort(inv), split_points)
     return keys, index_groups
 
 def _get_index_groups_old(arr):
