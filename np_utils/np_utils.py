@@ -831,6 +831,19 @@ def box_list(l, box_shape=None):
 
 def box(arr, depth=0):
     '''Make nested array of arrays from an existing array
+       depth specifies the point at which to split the outer array from the inner
+       depth=0 denotes that the entire array should be boxed
+       depth=-1 denotes that all leaf elements 
+       box always adds an outer singleton dimension to ensure that arr values with shape[0]==1 are handled properly
+       '''
+    box_shape, inner_shape = split_at(np.shape(arr), depth)
+    box_shape = (1,) + box_shape # always add an extra outer dimension for the boxing
+    arr_flat = np.reshape(arr, (-1,) + inner_shape)
+    boxed = box_list(arr_flat, box_shape)
+    return boxed
+
+def box_inconsistent(arr, depth=0):
+    '''Make nested array of arrays from an existing array
        depth=0 specifies the point at which to split the outer ar'''
     box_shape, inner_shape = split_at(np.shape(arr), depth)
     box_shape = box_shape if depth else (1,)
@@ -840,3 +853,106 @@ def box(arr, depth=0):
     boxed_flat[:] = [np.asanyarray(arr_flat[i])
                      for i in range(len(boxed_flat))]
     return boxed
+
+def box_v1(arr, depth=0):
+    '''Make nested array of arrays from an existing array
+       depth specifies the point at which to split the outer array from the inner
+       depth=0 denotes that the entire array should be boxed
+       depth=-1 denotes that all leaf elements 
+       box always adds an outer singleton dimension to ensure that arr values with shape[0]==1 are handled properly
+       '''
+    box_shape, inner_shape = split_at(np.shape(arr), depth)
+    box_shape = (1,) + box_shape # always add an extra outer dimension for the boxing
+    boxed = np.empty(box_shape, dtype=np.object)
+    boxed_flat = boxed.ravel()
+    arr_flat = np.reshape(arr, (-1,) + inner_shape)
+    boxed_flat[:] = [np.asanyarray(arr_flat[i])
+                     for i in range(len(boxed_flat))]
+    return boxed
+
+def box_shape(boxed_arr):
+    return np.shape(boxed_arr[1:]) # ignore the first dimension since it is added during boxing
+
+def is_boxed(a):
+    return (hasattr(a, 'shape') and
+            hasattr(a, 'dtype') and
+            a.dtype == object and
+            a.shape[0] == 1)
+
+def unbox_inconsistent(arr):
+    '''Convert an array of arrays to one large array.
+       If arr is not actually an array, just return it'''
+    if not is_boxed(arr):
+        return arr # already unboxed
+    arr_flat = [np.asanyarray(i) for i in arr.ravel()]
+    a2 = np.array(arr_flat)
+    new_shape = (a2.shape[1:] if arr.shape == (1,) else
+                 arr.shape + a2.shape[1:])
+    return a2.reshape(new_shape)
+
+def unbox(arr):
+    '''Convert an array of arrays to one large array.
+       If arr is not actually an array, just return it'''
+    if not is_boxed(arr):
+        return arr # already unboxed
+    arr_flat = [np.asanyarray(i) for i in arr.ravel()]
+    a2 = np.array(arr_flat)
+    new_shape = arr.shape[1:] + a2.shape[1:]
+    return a2.reshape(new_shape)
+
+def apply_at_depth(f, *args, **kwds):
+    '''Takes a function and its arguments (assumed to 
+       all be arrays) and applies boxing to the arguments so that various re-broadcasting can occur 
+       Somewhat similar to vectorize and J's rank conjunction (")
+       depths is the only allowed keyword at the moment'''
+    depths = kwds.pop('depths', 0)
+    if not hasattr(depths, '__len__'):
+        depths = [depths] * len(args)
+    assert len(args) == len(depths)
+    box_list = map(box, args, depths)
+    #print boxed.__class__
+    #print boxed[0]
+    #print boxed[1]
+    #print boxed[0][0].__class__
+    #print boxed[1][0].__class__
+    #print f(boxed[0])
+    #print f(*boxed)
+    #exit()
+    print box_list[0]
+    br_box_list = np.broadcast_arrays(*box_list) #reshape all boxes to be the same shape
+    #assertSameAndCondense(map(np.shape, box_list))
+    br_box_shape = br_box_list[0].shape
+    br_box_size = br_box_list[0].size
+    br_box_flat = map(np.ravel, br_box_list)
+    print br_box_list
+    print br_box_size
+    #exit()
+    res_list = [f(*[j[i] for j in br_box_flat])
+                    for i in range(br_box_size)]
+    res_arr = np.array(res_list)
+    return res_arr.reshape(br_box_shape[1:]+res_arr.shape[1:])
+
+s = np.sum(box(np.arange(24).reshape([2,3,4])))
+print s.__class__
+print s.shape
+print s
+print apply_at_depth(np.sum, np.arange(24).reshape([2,3,4]), depths=2)
+print apply_at_depth(np.add, np.arange(24).reshape([2,3,4]), np.array([1]), depths=0)
+exit()
+
+def unbox_box_test(arr, depth=0):
+    u = unbox(box(arr, depth))
+    s = np.array_equal(u, arr)
+    if not s:
+        print arr
+        print u
+    return s
+
+assert unbox_box_test([1,2,3,4])
+assert unbox_box_test([[1,2,3,4]])
+assert unbox_box_test([[1,2,3,4]], depth=1) # this is essentially unavoidable because J boxes can have one element but an empty shape while numpy object arrays cannot
+assert unbox_box_test(np.arange(24).reshape(2,3,4))
+assert unbox_box_test(np.arange(24).reshape(2,3,4), 1)
+assert unbox_box_test(np.arange(24).reshape(2,3,4), 2)
+
+assert unbox_box_test([[1,2,3,4]], depth=1) # this is shows why bo_inconsistent and unbox_inconsistent are inconsistent -- J boxes can have one element but an empty shape while numpy object arrays cannot (hence the need for the singleton dimension which then gets ignored when unboxing)
