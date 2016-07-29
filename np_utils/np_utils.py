@@ -866,36 +866,11 @@ def box(arr, depth=0):
     boxed = box_list(arr_flat, box_shape)
     return boxed
 
-def box_inconsistent(arr, depth=0):
-    '''Make nested array of arrays from an existing array
-       depth=0 specifies the point at which to split the outer ar'''
-    box_shape, inner_shape = split_at(np.shape(arr), depth)
-    box_shape = box_shape if depth else (1,)
-    boxed = np.empty(box_shape, dtype=np.object)
-    boxed_flat = boxed.ravel()
-    arr_flat = np.reshape(arr, (-1,) + inner_shape)
-    boxed_flat[:] = [np.asanyarray(arr_flat[i])
-                     for i in range(len(boxed_flat))]
-    return boxed
-
-def box_v1(arr, depth=0):
-    '''Make nested array of arrays from an existing array
-       depth specifies the point at which to split the outer array from the inner
-       depth=0 denotes that the entire array should be boxed
-       depth=-1 denotes that all leaf elements 
-       box always adds an outer singleton dimension to ensure that arr values with shape[0]==1 are handled properly
-       '''
-    box_shape, inner_shape = split_at(np.shape(arr), depth)
-    box_shape = (1,) + box_shape # always add an extra outer dimension for the boxing
-    boxed = np.empty(box_shape, dtype=np.object)
-    boxed_flat = boxed.ravel()
-    arr_flat = np.reshape(arr, (-1,) + inner_shape)
-    boxed_flat[:] = [np.asanyarray(arr_flat[i])
-                     for i in range(len(boxed_flat))]
-    return boxed
-
 def box_shape(boxed_arr):
-    return np.shape(boxed_arr[1:]) # ignore the first dimension since it is added during boxing
+    '''Get the shape of a box
+       Same as np.shape except that we need to ignore
+       the first dimension since it gets added during boxing'''
+    return np.shape(boxed_arr)[1:]
 
 def is_boxed(a):
     return (hasattr(a, 'shape') and
@@ -903,76 +878,119 @@ def is_boxed(a):
             a.dtype == object and
             a.shape[0] == 1)
 
-def unbox_inconsistent(arr):
-    '''Convert an array of arrays to one large array.
-       If arr is not actually an array, just return it'''
-    if not is_boxed(arr):
-        return arr # already unboxed
-    arr_flat = [np.asanyarray(i) for i in arr.ravel()]
-    a2 = np.array(arr_flat)
-    new_shape = (a2.shape[1:] if arr.shape == (1,) else
-                 arr.shape + a2.shape[1:])
-    return a2.reshape(new_shape)
+def _broadcast_arr_list(l):
+    '''Helper function to broadcast all elements in a list to arrays with a common shape
+       Uses broadcast_arrays unless there is only one box'''
+    arr_list = map(np.asanyarray, l)
+    return (broadcast_arrays(*arr_list)
+            if len(arr_list) > 1 else
+            arr_list)
 
-def unbox(arr):
+def unbox(boxed):
     '''Convert an array of arrays to one large array.
        If arr is not actually an array, just return it'''
-    if not is_boxed(arr):
-        return arr # already unboxed
-    arr_flat = [np.asanyarray(i) for i in arr.ravel()]
-    a2 = np.array(arr_flat)
-    new_shape = arr.shape[1:] + a2.shape[1:]
-    return a2.reshape(new_shape)
+    if not is_boxed(boxed):
+        return boxed # already unboxed
+    arr = np.array(_broadcast_arr_list(boxed.ravel()))
+    return arr.reshape(box_shape(boxed) + arr.shape[1:])
 
 def apply_at_depth(f, *args, **kwds):
     '''Takes a function and its arguments (assumed to 
        all be arrays) and applies boxing to the arguments so that various re-broadcasting can occur 
        Somewhat similar to vectorize and J's rank conjunction (")
-       depths is the only allowed keyword at the moment'''
+       
+       f: a function that acts on arrays and returns an array
+       args: the arguments to f (all arrays)
+             depending on depths, various subarrays from these are what actually get passed to f
+       kwds:
+       depths: an integer or list of integers with the same length as args (default 0)
+       broadcast_results: a boolean that determines if broadcasting should be applied to the results (default False)
+       
+       Returns: a new array based on f mapped over various subarrays of args
+       
+       Examples:
+       
+       One way to think about apply_at_depth is as replacing this kind of construct:
+       a, b = args
+       l = []
+       for i in range(a.shape[0]):
+           ll = []
+           for j in range(a.shape[1]):
+               ll.append(f(a[i, j], b[j]))
+           l.append(ll)
+       result = np.array(l)
+       
+       This would simplify to:
+       
+       apply_at_depth(f, a, b, depths=[2, 1])
+       
+       except that apply_at_depths handles all sorts of
+       other types of broadcasting for you.
+       
+       Something like this could be especially useful if the
+       "f" in question depends on its arguments having certain
+       shapes but you have data structures with those as subsets.
+       
+       
+       The algorithm itself is as follows:
+        * box each arg at the specified depth (box_list)
+          See docs for "box" for more details
+        * broadcast each boxed argument to a common shape
+          (bbl, short for broadcasted box_list)
+          Note that box *contents* can still have any  shape
+        * flatten each broadcasted box (bbl_flat)
+          Each element of bbl_flat will be a 1D list
+          of arrays where each list had the same length
+          (for clarity, lets call these lists l0, l1, l2, etc)
+        * map f over these flat boxes like so:
+          [f(l0[i], l1[i], ...)
+           for i in range(arg_size)]
+          or just map(f, *bbl_flat)
+          Again, arg0[i] will still be an array that can have arbitrary shape
+          and will be some subarray of args[0] (ex: args[0][2,1])
+        * Optionally broadcast the results (otherwise 
+          force all outpus to have the same shape) and 
+          construct a single array from all the outputs
+        * Reshape the result to account for the flattening that
+          happened to the broadcasted boxes
+          This is the same way that unboxing works.
+        * Celebrate avoiding unnecessarily complex loops :)
+       
+       This function is as efficient as it can be considering the generality and if f is reasonable slow and the arrays inside the boxes are fairly large it should be fine.
+       However, performance may be a problem if applying it to single elements
+       In other words, with:
+       a = np.arange(2000).reshape(200, 2, 5)
+       do this:
+       apply_at_depth_ravel(np.sum, depth=1)
+       instead of this:
+       apply_at_depth(np.sum, a, depths=1)
+       The latter is just essentially calling map(np.sum, a)'''
     depths = kwds.pop('depths', 0)
-    if not hasattr(depths, '__len__'):
-        depths = [depths] * len(args)
+    broadcast_results = kwds.pop('broadcast_results', False)
+    depths = (depths if hasattr(depths, '__len__') else
+              [depths] * len(args))
     assert len(args) == len(depths)
-    box_list = map(box, args, depths)
-    #print boxed.__class__
-    #print boxed[0]
-    #print boxed[1]
-    #print boxed[0][0].__class__
-    #print boxed[1][0].__class__
-    #print f(boxed[0])
-    #print f(*boxed)
-    #exit()
-    print box_list[0]
-    print 'bl', box_list
-    
-    #reshape all boxes to be the same shape
-    br_box_list = (broadcast_arrays(*box_list)
-                   if len(box_list) > 1 else
-                   box_list)
-    #assertSameAndCondense(map(np.shape, box_list))
-    br_box_shape = br_box_list[0].shape
-    br_box_size = br_box_list[0].size
-    br_box_flat = map(np.ravel, br_box_list)
-    print br_box_list
-    print br_box_size
-    #exit()
-    res_list = [f(*[j[i] for j in br_box_flat])
-                    for i in range(br_box_size)]
-    res_arr = np.array(res_list)
-    return res_arr.reshape(br_box_shape[1:]+res_arr.shape[1:])
+    boxed_list = map(box, args, depths)
+    bbl = _broadcast_arr_list(boxed_list)
+    bb_shape = box_shape(bbl[0])
+    bbl_flat = map(np.ravel, bbl)
+    results = map(f, *bbl_flat)
+    results = (results if not broadcast_results else
+               _broadcast_arr_list(results))
+    arr = np.array(results)
+    return arr.reshape(bb_shape + arr.shape[1:])
 
 a = np.arange(24).reshape([2,3,4])
 s = np.sum(box(a))
 print s.__class__
 print s.shape
 print s
-for depths in [0]+range(-4,4):
+for depths in [0] + range(-4,4):
     print depths
     print apply_at_depth(np.sum, a, depths=depths)
 for depths in [0] + range(-4,4):
     print 'd', depths
-    print apply_at_depth(np.add, a, np.array([1]), depths=depths)
-exit()
+    print apply_at_depth(np.subtract, a, np.array([1]), depths=depths)
 
 def unbox_box_test(arr, depth=0):
     u = unbox(box(arr, depth))
