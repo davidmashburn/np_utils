@@ -92,11 +92,6 @@ def iterToX_splat(f, iterable, break_strings=True):
     except TypeError:
         return iterable
 
-
-###############################
-## Some basic list utilities ##
-###############################
-
 def listify(x):
     '''A simple function to wrap non-lists in []'s
        Helps in the case when arguments can optionally
@@ -106,6 +101,54 @@ def listify(x):
     return (x if isinstance(x, list) else
             list(x) if isinstance(x, tuple) else
             [x])
+
+##################
+## List testing ##
+##################
+
+def find_first_occurrence_in_list(l):
+    '''Find the first occurrence (index) of each unique element in l.
+       Modified version of code found here:
+       http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
+       For arrays, use np_utils.find_first_occurrence or np_utils.find_first_occurrence_1d'''
+    seen = set()
+    return np.array([i for i, p in enumerate(l)
+                     for s in totuple(p)     # with s as totuple(a)   <-- would be this if python supported it
+                     if s not in seen and not seen.add(s)])
+
+def has_duplicates(l):
+    '''For a 1D list, test whether there are any duplicated elements.'''
+    return len(l) > len(set(l))
+
+def getMostCommonVal(l):
+    '''Get the most-occuring value in a list.
+       When multiple values occur the same number of times, returns the minimum one
+       Example:
+           _getMostCommonVal([1,2,4,3,4,5,6,3,5]) -> 3'''
+    return Counter(l).most_common()[0][0]
+
+def all_equal(l, equality_function=operator.eq):
+    '''Test if all elements in a list are the same'''
+    if len(l)<2:
+        return True
+    
+    l0 = l[0]
+    return all([equality_function(i, l0) for i in l])
+
+def assertSameAndCondense(l, message='List values differ!',
+                          equality_function=operator.eq):
+    '''Take a list of values that should all be the same, assert that this is true,
+       and then return the common value
+       This acts as a safe funnel in exploratory data processing,
+       cutting a large same-valued list down to a single value.'''
+    assert all_equal(l), message
+    return l[0]
+
+###############################################################
+# Transformations: reshaping, splitting, filtering, grouping ##
+###############################################################
+
+# Reshaping:
 
 def flatten(l,repetitions=1):
     '''A wrapper around the generator-based list flattener (quite fast)
@@ -136,6 +179,29 @@ def ziptranspose(l):
        (This is just a wrapper around zip(*l))'''
     return zip(*l)
 
+def partition(l,n,clip=True):
+    '''Partition list "l" into "n"-sized chunks
+       clip chops off whatever does not fit into n-sized chunks at the end'''
+    length = ( len(l)//n*n if clip else len(l) ) # //n*n is a clipping operation...NOT /n**2
+    return [l[i:i+n] for i in range(0,length,n)]
+
+def roll(l,n=1):
+    '''Roll a list (like numpy.roll) -- For lists only! Uses concatenate with "+"'''
+    if hasattr(l,'__iter__'):
+        n = n%len(l)
+        return l[-n:]+l[:-n]
+    else:
+        return l
+
+def zipIntoPairs(l,cycle=False,offset=1):
+    '''Form all adjacent pairs from a list
+       If cycle is True, pair the end and beginning as well
+       If offset is greater than 1, pair separated elements'''
+    if cycle:
+        return zip(l,roll(l,-offset))
+    else:
+        return zip(l[:-offset],l[offset:])
+
 def intersperse(l,separator):
     '''Intersperse a separator between all items
        
@@ -155,48 +221,7 @@ def intersperse(l,separator):
     
     return flatten(zip( l, [separator]*len(l) ))[:-1]
 
-def has_duplicates(l):
-    '''For a 1D list, test whether there are any duplicated elements.'''
-    return len(l) > len(set(l))
-
-def removeDuplicates(l):
-    '''Order preserving duplicate removal.
-       Automatically converts lists and arrays (which are unhashable) to nested tuples.
-       Modified version of code found here:
-       http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order'''
-    seen = set()
-    return [ x for x in totuple(l)
-               if x not in seen and not seen.add(x) ]
-
-def find_first_occurrence_in_list(l):
-    '''Find the first occurrence (index) of each unique element in l.
-       Modified version of code found here:
-       http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
-       For arrays, use np_utils.find_first_occurrence or np_utils.find_first_occurrence_1d'''
-    seen = set()
-    return np.array([i for i, p in enumerate(l)
-                     for s in totuple(p)     # with s as totuple(a)   <-- would be this if python supported it
-                     if s not in seen and not seen.add(s)])
-
-def removeAdjacentDuplicates(l):
-    '''Replace any groups of items with the same value with a single occurrence instead.
-       Ex:
-       removeAdjacentDuplicates([1,2,3,0,0,1,2,0,0,1,1,1,2]) --> [1,2,3,0,1,2,0,1,2]'''
-    return [ l[i] for i in range(len(l)-1)
-                  if l[i]!=l[i+1] ] + l[-1:]
-
-def deletecases(l,cases):
-    '''Delete all elements of list "cases" from list "l"
-       For large numbers of cases, pass cases as a set for speed'''
-    if not hasattr(cases,'__iter__'):
-        cases=[cases]
-    return [ i for i in l if i not in cases ]
-
-def partition(l,n,clip=True):
-    '''Partition list "l" into "n"-sized chunks
-       clip chops off whatever does not fit into n-sized chunks at the end'''
-    length = ( len(l)//n*n if clip else len(l) ) # //n*n is a clipping operation...NOT /n**2
-    return [l[i:i+n] for i in range(0,length,n)]
+# Splitting:
 
 def split_at(l, i):
     '''Split a list into the parts before and after i
@@ -256,29 +281,34 @@ def split_list_on_condition(l, cond):
         (true_list if cond(i) else false_list).append(i)
     return true_list, false_list
 
-def roll(l,n=1):
-    '''Roll a list (like numpy.roll) -- For lists only! Uses concatenate with "+"'''
-    if hasattr(l,'__iter__'):
-        n = n%len(l)
-        return l[-n:]+l[:-n]
-    else:
-        return l
+# Filtering:
 
-def zipIntoPairs(l,cycle=False,offset=1):
-    '''Form all adjacent pairs from a list
-       If cycle is True, pair the end and beginning as well
-       If offset is greater than 1, pair separated elements'''
-    if cycle:
-        return zip(l,roll(l,-offset))
-    else:
-        return zip(l[:-offset],l[offset:])
+def deletecases(l,cases):
+    '''Delete all elements of list "cases" from list "l"
+       For large numbers of cases, pass cases as a set for speed'''
+    if not hasattr(cases,'__iter__'):
+        cases=[cases]
+    return [ i for i in l if i not in cases ]
 
-def getMostCommonVal(l):
-    '''Get the most-occuring value in a list.
-       When multiple values occur the same number of times, returns the minimum one
-       Example:
-           _getMostCommonVal([1,2,4,3,4,5,6,3,5]) -> 3'''
-    return Counter(l).most_common()[0][0]
+def removeDuplicates(l):
+    '''Order preserving duplicate removal.
+       Automatically converts lists and arrays (which are unhashable) to nested tuples.
+       Modified version of code found here:
+       http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order'''
+    seen = set()
+    return [ x for x in totuple(l)
+               if x not in seen and not seen.add(x) ]
+
+def removeAdjacentDuplicates(l):
+    '''Replace any groups of items with the same value with a single occurrence instead.
+       Ex:
+       removeAdjacentDuplicates([1,2,3,0,0,1,2,0,0,1,1,1,2]) --> [1,2,3,0,1,2,0,1,2]'''
+    return [ l[i] for i in range(len(l)-1)
+                  if l[i]!=l[i+1] ] + l[-1:]
+
+####################################################
+## Grouping, connections, chaining, interpolation ##
+####################################################
 
 def groupByFunction(l,f,appendFun=None):
     '''Break up a list into groups (a dict of smaller lists) based on a
@@ -388,23 +418,6 @@ def interp(l,index):
     else:
         indexB = indexA + (1 if index>=0 else -1)
         return l[indexA]*(1-m) + l[indexB]*(m)
-
-def all_equal(l, equality_function=operator.eq):
-    '''Test if all elements in a list are the same'''
-    if len(l)<2:
-        return True
-    
-    l0 = l[0]
-    return all([equality_function(i, l0) for i in l])
-
-def assertSameAndCondense(l, message='List values differ!',
-                          equality_function=operator.eq):
-    '''Take a list of values that should all be the same, assert that this is true,
-       and then return the common value
-       This acts as a safe funnel in exploratory data processing,
-       cutting a large same-valued list down to a single value.'''
-    assert all_equal(l), message
-    return l[0]
 
 #####################################
 ## Some utilities for dictionaries ##
