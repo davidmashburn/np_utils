@@ -88,5 +88,5 @@ def entropy(arr, axis=None, handle_non_integers=True):
         probs = counts / float(arr.size)
         return -np.sum(probs * np.log2(probs))
     else:
-        entropies = map_along_axis(entropy, axis, arr)
+        entropies = map_along_axis(entropy, arr, axis)
         return entropies
