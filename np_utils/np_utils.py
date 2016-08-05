@@ -1,13 +1,100 @@
 #!/usr/bin/env python
 '''Utilities for array and list manipulation by David Mashburn.
-Notably:
+Notable functions by category:
+    
+    Simple utilities and array generators
+    -------------------------------------
+    multidot ->
+        np.dot with multiple arguments
+    linrange, build_grid ->
+        alternatives to numpy builtins (arange, mgrid)
+        with different parameter options
+    true_where, np_has_duplicates, haselement ->
+        functions to test arrays
+    
+    Transformations: reshaping, splitting, filtering
+    ------------------------------------------------
+    ravel_at_depth, reshape_smaller, reshape_repeating ->
+        reshape helpers/ enhancements
+    partitionNumpy ->
+        like list_utils.partition for arrays
+    shapeShift ->
+        In one call, construct a new array of different shape with the same contents
+    addBorder ->
+        add a border aroung an ND-array
     shape_multiply, shape_multiply_zero_fill ->
-        functions to scale arrays by integer multiples (without interpolation)
+        scale arrays by integer multiples (without interpolation)
+    remove_duplicate_subarrays->
+        efficient set-like operation for arrays -- like an order-perserving
+        version of np.unique that deals with subarrays instead of elements
     
-    polyArea -> get polygon area from points
+    Basic numerical calculations
+    ----------------------
+    diffmean, sum_sqr_diff, sqrtSumSqr, sqrtMeanSqr ->
+        common combinations of numpy operations
+    vectorNorm, pointDistance ->
+        vector norm and euclidean distance
     
-    MORE HERE
+    Polygon metrics
+    ---------------
+    polyArea, polyCirculationDirection, polyCentroid, polyPerimeter ->
+        basic metrics over polygons represented as arrays of (x, y) points
+        (the final point is always assumed to connect to the first)
     
+    Interpolation
+    -------------
+    interpNaNs ->
+        Fill any NaN values with interpolated values (1D)
+    linearTransform, reverseLinearTransform ->
+        Linear transformations based on starting and ending points
+    FindOptimalScaleAndTranslationBetweenPointsAndReference ->
+        Helper function, wrapper around linear least squares
+    
+    Broadcasting
+    ------------
+    concatenate_broadcasting ->
+        Broadcasting version of concatenate (alias broad_cat)
+    reverse_broadcast ->
+        change any function to broadcast its arguments using reversed shapes
+        (matches leftmost dimensions instead of right)
+    
+    Indexing, grouping, and record arrays
+    -------------------------------------
+    group_count ->
+        Efficient element counting (but safe/ more flexible than np.bincount)
+    get_index_groups ->
+        Efficient, generalized grouping operation for arrays (1D)
+        Produces aligned keys (unique values)
+        and index_groups (array of locations for each key in the original array)
+        Essentially like an efficient version of:
+            [np.where(arr==i) for i in np.unique(arr)])
+        Based on code from np.unique
+    np_groupby ->
+        Group-by operation using get_index_groups
+    rec_groupby ->
+        Similar to matplotlib's rec_groupby but much more efficient
+    get_array_subgroups ->
+        Form a dictionary of subgroups of an array based on a different grouping array
+    fields_view ->
+        Efficient view of only certain fields in a record array
+    find_first_occurrence, find_first_occurrence_1d, is_first_occurrence,
+    is_first_occurrence_1d, get_first_indices ->
+        Functions to determine the first occurrence (index)
+        of each unique value in an array (ND or 1D)
+    
+    Boxing (nested arrays)
+    ----------------------
+    box, unbox -> Generate an ndarray of ndarrays (or vice-versa)
+    
+    Generalized map/apply
+    ---------------------
+    map_along_axis ->
+        Map a function along any axis of an array
+    apply_at_depth_ravel ->
+        Apply a function that actions on 1D arrays at any depth in an array
+    apply_at_depth ->
+        Apply a function at any depth in an array
+        Also works for functions with multiple arguments (different depths per argument)
     '''
 
 from __future__ import division
@@ -24,6 +111,9 @@ if StrictVersion(np.__version__) < StrictVersion('1.11.0'):
 else:
     from numpy import broadcast_arrays
 
+###########################################
+## Simple utilities and array generators ##
+###########################################
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
 
@@ -86,6 +176,7 @@ def haselement(arr,subarr):
         boolArr.resize([arr.shape[0],np.prod(arr.shape[1:])])
         return boolArr.all(axis=1).any()
 
+# This function is pretty out-dated...
 def getValuesAroundPointInArray(arr,point,wrapX=False,wrapY=False):
     '''Given any junction in a 2D array, get the set of unique values that surround it:
        Junctions always have 4 pixels around them, and there is one more junction
@@ -102,6 +193,9 @@ def getValuesAroundPointInArray(arr,point,wrapX=False,wrapY=False):
         print "Point must be interior to the array!"
         return None
 
+######################################################
+## Transformations: reshaping, splitting, filtering ##
+######################################################
 
 def ravel_at_depth(arr, depth=0):
     '''Ravel subarrays at some depth of arr
@@ -262,6 +356,10 @@ def limitInteriorPoints(l,numInteriorPoints,uniqueOnly=True):
         inds = np.unique(inds)
     return [ l[i] for i in inds ]
 
+##################################
+## Basic numerical calculations ##
+##################################
+
 def diffmean(x,*args,**kwds):
     '''Subtract off the mean from x'''
     x = np.asarray(x)
@@ -296,6 +394,9 @@ def pointDistance(point0,point1):
        point0 and point1 can also be lists of points'''
     return sqrtSumSqr(np.asarray(point1)-np.asarray(point0))
 
+#####################
+## Polygon metrics ##
+#####################
 
 def polyArea(points):
     '''This calculates the area of a general 2D polygon
@@ -361,6 +462,9 @@ def polyPerimeter(points,closeLoop=True):
         points = np.concatenate([points,[points[0]]])
     return sum(pointDistance(points[1:],points[:-1]))
 
+###################
+## Interpolation ##
+###################
 
 def interpNaNs(a):
     '''Changes the underlying array to get rid of NaN values
@@ -492,6 +596,10 @@ def FindOptimalScaleAndTranslationBetweenPointsAndReference(points,pointsRef):
     # a = 1.*(xm*xrefm - xCxref + ym*yrefm - yCyref) / (xm**2 - x2m + ym**2 - y2m)
     # x0,y0 = xrefm - a*xm,yrefm - a*ym
 
+##################
+## Broadcasting ##
+##################
+
 def concatenate_broadcasting(*arrs, **kwds):
     '''Broadcasting (i.e. forgiving) version of concatenate
     axis is passed to concatenate (default 0)
@@ -513,6 +621,10 @@ def reverse_broadcast(f):
     newf.__doc__ = '\n'.join(['Transpose the arguments before and after running the function f:',
                              f.__doc__])
     return newf
+
+###########################################
+## Indexing, grouping, and record arrays ##
+###########################################
 
 def _get_index_groups_old(arr):
     '''For a 1D array, get all unique values (keys)
@@ -811,6 +923,10 @@ def get_first_indices(arr, values, missing=None):
     
     return np.array(inds)
 
+############################
+## Boxing (nested arrays) ##
+############################
+
 def box_list(l, box_shape=None):
     '''Convert a list to boxes (object array of arrays)
        with shape optionally specified by box_shape'''
@@ -860,6 +976,10 @@ def unbox(boxed):
         return boxed # already unboxed
     arr = np.array(_broadcast_arr_list(boxed.ravel()))
     return arr.reshape(box_shape(boxed) + arr.shape[1:])
+
+###########################
+## Generalized map/apply ##
+###########################
 
 def map_along_axis(f, arr, axis):
     '''Apply a function to a specific axis of an array
