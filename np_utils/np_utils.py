@@ -27,10 +27,6 @@ else:
 
 one = np.array(1) # a surprisingly useful little array; makes lists into arrays by simply one*[[1,2],[3,6],...]
 
-def _iterize(x):
-    '''Ensure that x is iterable or wrap it in a tuple'''
-    return x if hasattr(x, '__iter__') else (x,)
-
 def haselement(arr,subarr):
     '''Test if subarr is equal to one of the elements of arr.
        This is the equivalent of the "in" operator when using lists instead of arrays.'''
@@ -562,6 +558,10 @@ def shape_multiply_zero_fill(arr,shapeMultiplier):
         #c[tuple([(i//2) for i in shm])]=1
     return shape_multiply(arr,shapeMultiplier,oddOnly=True,adjustFunction=zeroFill)
 
+def _iterize(x):
+    '''Ensure that x is iterable or wrap it in a tuple'''
+    return x if hasattr(x, '__iter__') else (x,)
+
 def reshape_repeating(arr, new_shape):
     '''A forgiving version of np.reshape that allows the resulting
        array size to be larger or smaller than the original
@@ -904,7 +904,7 @@ def apply_at_depth(f, *args, **kwds):
        args: the arguments to f (all arrays)
              depending on depths, various subarrays from these are what actually get passed to f
        kwds:
-       depths: an integer or list of integers with the same length as args (default 0)
+       depths (or depth): an integer or list of integers with the same length as args (default 0)
        broadcast_results: a boolean that determines if broadcasting should be applied to the results (default False)
        
        Returns: a new array based on f mapped over various subarrays of args
@@ -925,7 +925,7 @@ def apply_at_depth(f, *args, **kwds):
        
        apply_at_depth(f, a, b, depths=[2, 1])
        
-       except that apply_at_depths handles all sorts of
+       except that apply_at_depth handles all sorts of
        other types of broadcasting for you.
        
        Something like this could be especially useful if the
@@ -966,9 +966,11 @@ def apply_at_depth(f, *args, **kwds):
        do this:
        apply_at_depth_ravel(np.sum, depth=1)
        instead of this:
-       apply_at_depth(np.sum, a, depths=1)
+       apply_at_depth(np.sum, a, depth=1)
        The latter is just essentially calling map(np.sum, a)'''
-    depths = kwds.pop('depths', 0)
+    assert not ('depth' in kwds and 'depths' in kwds), (
+           'You can pass either kwd "depth" or "depths" but not both!')
+    depths = kwds.pop('depths', kwds.pop('depth', 0)) # Grab depths or depth, fall back to 0
     broadcast_results = kwds.pop('broadcast_results', False)
     depths = (depths if hasattr(depths, '__len__') else
               [depths] * len(args))

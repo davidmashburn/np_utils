@@ -360,23 +360,44 @@ def test_unbox_1():
     assert _unbox_box_equals(np.arange(24).reshape(2,3,4), 1)
     assert _unbox_box_equals(np.arange(24).reshape(2,3,4), 2)
 
+def test_apply_at_depth_0():
+    # Verify that the kwd handling is correct
+    a = np.arange(24).reshape([2, 3, 4])
+    b = np.arange(6).reshape([2, 3])
+    assert np.array_equal(a - 1,
+                          apply_at_depth(np.subtract, a, np.array([1]), depth=2))
+    assert np.array_equal(a - 1,
+                          apply_at_depth(np.subtract, a, np.array([1]), depths=2))
+    assert np.array_equal(a - 1,
+                          apply_at_depth(np.subtract, a, np.array([1]), depths=[2, 2]))
+    
+    fail = False
+    try:    apply_at_depth(np.subtract, a, np.array([1]), depth=2, depths=2)
+    except: fail = True
+    assert fail
+        
+
 def test_apply_at_depth_1():
     a = np.arange(24).reshape([2, 3, 4])
+    
+    np.array_equal(apply_at_depth(np.sum, a),
+                   apply_at_depth_ravel(np.sum, a))
+    
     for depth in [0] + range(-4,4):
-        assert np.array_equal(apply_at_depth(np.sum, a, depths=depth),
+        assert np.array_equal(apply_at_depth(np.sum, a, depth=depth),
                               apply_at_depth_ravel(np.sum, a, depth=depth))
-    assert apply_at_depth(np.sum, a, depths=0) == np.sum(a)
-    assert np.array_equal(apply_at_depth(np.sum, a, depths=-1),
+    assert apply_at_depth(np.sum, a, depth=0) == np.sum(a)
+    assert np.array_equal(apply_at_depth(np.sum, a, depth=-1),
                           np.sum(a, axis=-1))
-    assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depths=0),
+    assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depth=0),
                           a - 1)
-    assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depths=0),
+    assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depth=0),
                           [i - 1 for i in a])
-    assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depths=0),
+    assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depth=0),
                           [[j - 1 for j in i]
                            for i in a])
     for depth in [0] + range(-4,4):
-        assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depths=depth),
+        assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depth=depth),
                               a - 1)
 
 def test_apply_at_depth_2():
@@ -404,7 +425,7 @@ def test_apply_at_depth_2():
     assert np.array_equal(apply_at_depth(f, images, add_ons, depths=[1, 1]),
                           np.array([f(images[i], add_ons[i]) for i in range(5)]))
 
-def apply_at_depth_3():
+def test_apply_at_depth_3():
     failed = False
     try: a + b
     except: failed = True
@@ -488,6 +509,7 @@ if __name__ == '__main__':
     test_reverse_broadcast_1()
     test_box_1()
     test_unbox_1()
+    test_apply_at_depth_0()
     test_apply_at_depth_1()
     test_apply_at_depth_2()
     test_apply_at_depth_3()
