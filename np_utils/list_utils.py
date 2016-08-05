@@ -144,9 +144,9 @@ def assertSameAndCondense(l, message='List values differ!',
     assert all_equal(l), message
     return l[0]
 
-###############################################################
-# Transformations: reshaping, splitting, filtering, grouping ##
-###############################################################
+#####################################################
+# Transformations: reshaping, splitting, filtering ##
+#####################################################
 
 # Reshaping:
 
