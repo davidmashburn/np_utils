@@ -225,6 +225,15 @@ def test_limitInteriorPoints_r5_7_False():
 def test_limitInteriorPointsInterpolating_04_3():
     assert limitInteriorPointsInterpolating([0,4],3) == [0,1.,2,3.,4]
 
+def test_reshape_smaller_1():
+    a = [1,2,3,4,6]
+    assert np.array_equal(reshape_smaller(a, 5), a)
+    assert np.array_equal(reshape_smaller(a, 3), a[:3])
+
+def test_reshape_smaller_2():
+    a44, a33 = np.arange(16).reshape((4, 4)), np.arange(9).reshape((3, 3))
+    assert np.array_equal(reshape_smaller(a44, (3,3)), a33)
+
 def test_partitionNumpy_1234_2():
     assert (partitionNumpy([1,2,3,4],2)==[[1,2],[3,4]]).all()
 
@@ -321,24 +330,94 @@ def test_build_grid_C():
                   [[[-1,-1,-1],[0,0,0],[1,1,1]],[[-3.1,1,5.1]]*3]))
 
 def test_reverse_broadcast_1():
-    assert np.all(
-        reverse_broadcast(np.add)([100,200], np.arange(6).reshape(2,3)) ==
-        np.array([[100, 101, 102], [203, 204, 205]])
-    )
+    assert np.array_equal(reverse_broadcast(np.add)([100,200],
+                                                    np.arange(6).reshape(2,3)),
+                          np.array([[100, 101, 102], [203, 204, 205]]))
 
 def test_box_1():
     a = np.arange(10)
     aaa = np.arange(24).reshape([2, 3, 4])
     assert np.array_equal(box(a)[0], a)
-    assert np.array_equal(box(a, 1)[0], np.array(0))
+    assert np.array_equal(box(a, 0)[0], a)
+    assert np.array_equal(box(a, 1)[0, 0], 0)
     assert np.array_equal(box(aaa, 0)[0], aaa)
-    assert np.array_equal(box(aaa, 1)[0], aaa[0])
-    assert np.array_equal(box(aaa, 2)[0, 0], aaa[0, 0])
-    assert np.array_equal(box(aaa, 3)[0, 0, 0], aaa[0, 0, 0])
-    assert box(aaa, 0).shape == (1,)
-    assert box(aaa, 1).shape == (2,)
-    assert box(aaa, 2).shape == (2, 3)
-    assert box(aaa, 3).shape == (2, 3, 4)
+    assert np.array_equal(box(aaa, 1)[0, 0], aaa[0])
+    assert np.array_equal(box(aaa, 2)[0, 0, 0], aaa[0, 0])
+    assert np.array_equal(box(aaa, 3)[0, 0, 0, 0], aaa[0, 0, 0])
+    assert box_shape(box(aaa, 0)) == ()
+    assert box_shape(box(aaa, 1)) == (2,)
+    assert box_shape(box(aaa, 2)) == (2, 3)
+    assert box_shape(box(aaa, 3)) == (2, 3, 4)
+
+def _unbox_box_equals(arr, depth=0):
+    return np.array_equal(arr, unbox(box(arr, depth)))
+
+def test_unbox_1():
+    assert _unbox_box_equals([1,2,3,4])
+    assert _unbox_box_equals([[1,2,3,4]])
+    assert _unbox_box_equals([[1,2,3,4]], depth=1)
+    assert _unbox_box_equals(np.arange(24).reshape(2,3,4))
+    assert _unbox_box_equals(np.arange(24).reshape(2,3,4), 1)
+    assert _unbox_box_equals(np.arange(24).reshape(2,3,4), 2)
+
+def test_apply_at_depth_1():
+    a = np.arange(24).reshape([2, 3, 4])
+    for depth in [0] + range(-4,4):
+        assert np.array_equal(apply_at_depth(np.sum, a, depths=depth),
+                              apply_at_depth_ravel(np.sum, a, depth=depth))
+    assert apply_at_depth(np.sum, a, depths=0) == np.sum(a)
+    assert np.array_equal(apply_at_depth(np.sum, a, depths=-1),
+                          np.sum(a, axis=-1))
+    assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depths=0),
+                          a - 1)
+    assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depths=0),
+                          [i - 1 for i in a])
+    assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depths=0),
+                          [[j - 1 for j in i]
+                           for i in a])
+    for depth in [0] + range(-4,4):
+        assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depths=depth),
+                              a - 1)
+
+def test_apply_at_depth_2():
+    def f(a, b):
+        assert a.ndim == 2
+        assert b.ndim == 1
+        return np.vstack([a, b])
+
+    arr1 = np.arange(4*9).reshape(4, 1, 9)
+    arr2 = np.array([[[1,2,3,4,5,6,7,8,9],
+                      [10,20,30,40,50,60,70,80,90],
+                      [100]*9,
+                      [1000]*9]])
+    for i in range(4):
+        assert np.array_equal(apply_at_depth(f, arr1, arr2, depths=[1, 2])[0, i],
+                              f(arr1[i], arr2[0, i]))
+    images = np.array([i * np.arange(12).reshape(3, 4)
+                       for i in range(5)])
+    add_ons = np.array([[1,2,3,4],
+                        [10,20,30,40],
+                        [10]*4,
+                        [100]*4,
+                        [15]*4])
+
+    assert np.array_equal(apply_at_depth(f, images, add_ons, depths=[1, 1]),
+                          np.array([f(images[i], add_ons[i]) for i in range(5)]))
+
+def apply_at_depth_3():
+    failed = False
+    try: a + b
+    except: failed = True
+    assert failed
+
+    a, b = np.ones([4, 6]), [1,10,100,1000]
+    assert np.array_equal(apply_at_depth(np.add, a, b, depths=1),
+                          reverse_broadcast(np.add)(a, b))
+
+    inds = (0,0,1,2)
+    a, b = np.arange(120).reshape(1,2,3,4,5), [1,10,100,1000]
+    assert np.array_equal(apply_at_depth(np.add, a, b, depths=[4, 1]).__getitem__(inds),
+                         a.__getitem__(inds) + b[inds[-1]])
 
 if __name__ == '__main__':
     test_haselement_1A()
@@ -377,6 +456,8 @@ if __name__ == '__main__':
     test_limitInteriorPoints_r5_7_True()
     test_limitInteriorPoints_r5_7_False()
     test_limitInteriorPointsInterpolating_04_3()
+    test_reshape_smaller_1()
+    test_reshape_smaller_2()
     test_partitionNumpy_1234_2()
     test_partitionNumpy_123_2()
     test_shape_multiply_123_12()
@@ -406,3 +487,10 @@ if __name__ == '__main__':
     test_build_grid_C()
     test_reverse_broadcast_1()
     test_box_1()
+    test_unbox_1()
+    test_apply_at_depth_1()
+    test_apply_at_depth_2()
+    test_apply_at_depth_3()
+    
+    
+

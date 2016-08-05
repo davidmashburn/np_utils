@@ -454,10 +454,13 @@ def concatenate_broadcasting(*arrs, **kwds):
 concatenate_broadcasting.__doc__ += np.concatenate.__doc__
 broad_cat = concatenate_broadcasting # alias
 
-def partitionNumpy(l,n):
+def reshape_smaller(arr, new_shape):
+    '''Like reshape, but allows the array to be smaller than the original'''
+    return np.ravel(arr)[:np.prod(new_shape)].reshape(new_shape)
+
+def partitionNumpy(l, n):
     '''Like partition, but always clips and returns array, not list'''
-    a = np.asanyarray(l)
-    return a.reshape([len(l) // n, n])
+    return reshape_smaller(l, (len(l) // n, n))
 
 def shapeShift(arr,newShape,offset=None,fillValue=0):
     '''Create a new array with a specified shape and element value
@@ -560,19 +563,18 @@ def shape_multiply_zero_fill(arr,shapeMultiplier):
     return shape_multiply(arr,shapeMultiplier,oddOnly=True,adjustFunction=zeroFill)
 
 def reshape_repeating(arr, new_shape):
-    """A forgiving version of np.reshape that allows the resulting
-    array size to be larger or smaller than the original
-    When the new size is larger, values are filled by repeating the original (flattened) array
-    A smaller or equal size always returns a view.
-    A larger size always returns a copy.
-    """
+    '''A forgiving version of np.reshape that allows the resulting
+       array size to be larger or smaller than the original
+       When the new size is larger, values are filled by repeating the original (flattened) array
+       A smaller or equal size always returns a view.
+       A larger size always returns a copy.'''
     arr = np.asanyarray(arr)
     new_shape = _iterize(new_shape)
-    arr_flat = arr.reshape(arr.size)
     new_size = np.prod(new_shape)
     if new_size <= arr.size:
-        return arr_flat[:new_size].reshape(new_shape)
+        return reshape_smaller(arr, new_shape)
     else:
+        arr_flat = np.ravel(arr)
         repeats = np.ceil(new_size / arr.size)
         s = np.lib.stride_tricks.as_strided(arr_flat, (repeats, arr.size), (0, arr.itemsize))
         assert arr_flat.base is arr
@@ -863,8 +865,7 @@ def box(arr, depth=0):
     box_shape, inner_shape = split_at(np.shape(arr), depth)
     box_shape = (1,) + box_shape # always add an extra outer dimension for the boxing
     arr_flat = np.reshape(arr, (-1,) + inner_shape)
-    boxed = box_list(arr_flat, box_shape)
-    return boxed
+    return box_list(arr_flat, box_shape)
 
 def box_shape(boxed_arr):
     '''Get the shape of a box
@@ -956,7 +957,9 @@ def apply_at_depth(f, *args, **kwds):
           This is the same way that unboxing works.
         * Celebrate avoiding unnecessarily complex loops :)
        
-       This function is as efficient as it can be considering the generality and if f is reasonable slow and the arrays inside the boxes are fairly large it should be fine.
+       This function is as efficient as it can be considering the generality;
+       if f is reasonably slow and the arrays inside the boxes are
+       fairly large it should be fine.
        However, performance may be a problem if applying it to single elements
        In other words, with:
        a = np.arange(2000).reshape(200, 2, 5)
@@ -979,32 +982,3 @@ def apply_at_depth(f, *args, **kwds):
                _broadcast_arr_list(results))
     arr = np.array(results)
     return arr.reshape(bb_shape + arr.shape[1:])
-
-a = np.arange(24).reshape([2,3,4])
-s = np.sum(box(a))
-print s.__class__
-print s.shape
-print s
-for depths in [0] + range(-4,4):
-    print depths
-    print apply_at_depth(np.sum, a, depths=depths)
-for depths in [0] + range(-4,4):
-    print 'd', depths
-    print apply_at_depth(np.subtract, a, np.array([1]), depths=depths)
-
-def unbox_box_test(arr, depth=0):
-    u = unbox(box(arr, depth))
-    s = np.array_equal(u, arr)
-    if not s:
-        print arr
-        print u
-    return s
-
-assert unbox_box_test([1,2,3,4])
-assert unbox_box_test([[1,2,3,4]])
-assert unbox_box_test([[1,2,3,4]], depth=1) # this is essentially unavoidable because J boxes can have one element but an empty shape while numpy object arrays cannot
-assert unbox_box_test(np.arange(24).reshape(2,3,4))
-assert unbox_box_test(np.arange(24).reshape(2,3,4), 1)
-assert unbox_box_test(np.arange(24).reshape(2,3,4), 2)
-
-assert unbox_box_test([[1,2,3,4]], depth=1) # this is shows why bo_inconsistent and unbox_inconsistent are inconsistent -- J boxes can have one element but an empty shape while numpy object arrays cannot (hence the need for the singleton dimension which then gets ignored when unboxing)
