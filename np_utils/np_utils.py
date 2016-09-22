@@ -103,7 +103,9 @@ import numpy as np
 
 from gen_utils import islistlike
 from func_utils import g_inv_f_g
-from list_utils import totuple, flatten, zipflat, assertSameAndCondense, split_at, split_at_boundaries
+from list_utils import (totuple, flatten, zipflat, assertSameAndCondense,
+                        split_at, split_at_boundaries, coerce_to_target_length
+                       )
 
 from distutils.version import StrictVersion
 if StrictVersion(np.__version__) < StrictVersion('1.11.0'):
@@ -254,7 +256,7 @@ def addBorder(arr,borderValue=0,borderThickness=1,axis=None):
     tArr = np.zeros(arr.ndim)
     tArr[allOrOne] = borderThickness
     # a new array stretched to accommodate the border; fill with border Value
-    arrNew = np.empty( 2*tArr+arr.shape, dtype=arr.dtype )
+    arrNew = np.empty( (2*tArr+arr.shape).astype(np.int), dtype=arr.dtype )
     arrNew[:]=borderValue
     # a slice object that cuts out the new border
     if axis==None:
@@ -266,50 +268,71 @@ def addBorder(arr,borderValue=0,borderThickness=1,axis=None):
     arrNew[sl] = arr
     return arrNew
 
-def shape_multiply(arr, shapeMultiplier, oddOnly=False, adjustFunction=None):
-    '''Works like tile except that it keeps all like elements clumped
-       Essentially a non-interpolating, multi-dimensional image up-scaler'''
-    # really only 7 lines without checks...
-    arr=np.asarray(arr)
-    
-    sh = arr.shape
-    ndim = arr.ndim # dimensional depth of the array
-    shm = ( shapeMultiplier if hasattr(shapeMultiplier,'__len__') else
-           [shapeMultiplier] )
-    
-    if not len(shm)==len(arr.shape):
-        print 'Length of shapeMultipler must be the same as the array shape!'
-        return
-    if not sum([i>0 for i in shm])==len(arr.shape):
-        print 'All elements of shapeMultiplier must be integers greater than 0!'
-        return
-    if oddOnly:
-        if not sum([i%2==1 for i in shm])==ndim:
-            print 'All elements of shapeMultiplier must be odd integers greater than 0!'
-            return
-    
-    t=np.tile(arr,shm)
-    t.shape = zipflat(shm,sh)
-    t = t.transpose(*zipflat(range(1,ndim*2,2),range(0,ndim*2,2)))
-    
-    if adjustFunction!=None:
-        t=adjustFunction(t,arr,shm)
-    
-    return t.reshape(*[sh[i]*shm[i] for i in range(ndim)])
+def _transpose_interleaved(arr):
+    '''Helper function for shape_multiply and shape_divide
+       Transposes an array so that all odd axes are first, i.e.:
+       [1, 3, 5, 7, ..., 0, 2, 4, ...]'''
+    return arr.transpose(*zipflat(range(1, arr.ndim, 2),
+                                  range(0, arr.ndim, 2)))
 
-def shape_multiply_zero_fill(arr,shapeMultiplier):
+def shape_multiply(arr, scale, oddOnly=False, adjustFunction=None):
+    '''Works like tile except that it keeps all like elements clumped
+       Essentially a non-interpolating, multi-dimensional image up-scaler
+       Similar to scipy.ndimage.zoom but without interpolation'''
+    arr = np.asanyarray(arr)
+    scale = coerce_to_target_length(scale, arr.ndim)
+    if oddOnly:
+        assert all([i%2 == 1 for i in scale]), \
+            'All elements of scale must be odd integers greater than 0!'
+    t = np.tile(arr, scale)
+    t.shape = zipflat(scale, arr.shape)
+    t = _transpose_interleaved(t)
+    if adjustFunction != None:
+        t = adjustFunction(t, arr, scale)
+    new_shape = [sh * sc for sh, sc in zip(arr.shape, scale)]
+    return t.reshape(new_shape)
+
+def shape_multiply_zero_fill(arr, scale):
     '''Same as shape_muliply, but requires odd values for
-       shapeMultiplier and fills around original element with zeros.'''
-    def zeroFill(t,arr,shm):
-        ndim=arr.ndim
-        t*=0
-        s = [slice(None,None,None)]*ndim , [i//2 for i in shm] # construct a slice for the middle
-        t[zipflat(*s)]=arr
+       scale and fills around original element with zeros.'''
+    def zeroFill(t, a, sc):
+        t *= 0
+        middle_slice = flatten([slice(None), i//2] for i in sc)
+        t[middle_slice] = a
         return t
-        # This is a nice idea, but it doesn't work very easily...
-        #c = np.zeros(shm,arr.dtype)
-        #c[tuple([(i//2) for i in shm])]=1
-    return shape_multiply(arr,shapeMultiplier,oddOnly=True,adjustFunction=zeroFill)
+    
+    return shape_multiply(arr, scale, oddOnly=True, adjustFunction=zeroFill)
+
+def shape_divide(arr, scale, reduction='mean'):
+    '''Scale down an array (shape N x M x ...) by the specified scale
+       in each dimension (n x m x ...)
+       Each dimension in arr must be divisible by its scale
+       (throws an error otherwise)
+       This is reduces each sub-array (n x m x ...) to a single element
+       according to the reduction parameter, which is one of:
+        * mean (default): mean of each sub-array
+        * median: median of each sub-array
+        * first: the [0,0,0, ...] element of the sub-array
+        * all: all the possible (N x M x ...) sub-arrays;
+               returns an array of shape (n, m, ..., N, M, ...)
+       This is a downsampling operation, similar to
+       scipy.misc.imresize and scipy.ndimage.interpolate'''
+    arr = np.asanyarray(arr)
+    reduction_options = ['mean', 'median', 'first', 'all']
+    assert reduction in reduction_options, \
+        'reduction must be one of: ' + ' '.join(reduction_options)
+    scale = coerce_to_target_length(scale, arr.ndim)
+    assert all([sh % sc == 0 for sh, sc in zip(arr.shape,scale)]), \
+        'all dimensions must be divisible by their respective scale!'
+    new_shape = flatten([sh//sc, sc] for sh, sc in zip(arr.shape, scale))
+    # group pixes into smaller sub-arrays that can then be modified by standard operations
+    subarrays = _transpose_interleaved(arr.reshape(new_shape))
+    flat_subarrays = subarrays.reshape([np.product(scale)] + new_shape[::2])
+    return (np.mean(flat_subarrays, axis=0) if reduction == 'mean' else
+            np.median(flat_subarrays, axis=0) if reduction == 'median' else
+            flat_subarrays[0] if reduction == 'first' else
+            subarrays if reduction == 'all' else
+            None)
 
 def _iterize(x):
     '''Ensure that x is iterable or wrap it in a tuple'''
@@ -485,7 +508,7 @@ def interpNumpy(l,index):
     l = np.asarray(l)
     m = index % 1
     if m==0:
-        return l[index]
+        return l[int(index)]
     else:
         indexA,indexB = int(index), int(index) + (1 if index>=0 else -1)
         return l[indexA]*(1-m) + l[indexB]*(m)

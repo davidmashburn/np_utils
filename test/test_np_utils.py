@@ -241,10 +241,33 @@ def test_partitionNumpy_123_2():
     assert (partitionNumpy([1,2,3],2)==[[1,2]]).all()
 
 def test_shape_multiply_123_12():
-    assert np.all(shape_multiply([[1,2,3]],[2,3])==[[1,1,1,2,2,2,3,3,3]]*2)
+    assert np.array_equal(shape_multiply([[1,2,3]],[2,3]),
+                          [[1,1,1,2,2,2,3,3,3]]*2)
 
 def test_shape_multiply_zero_fill_123_12():
-    assert np.all(shape_multiply_zero_fill([[1,2,3]],[3,3]) == [[0]*9,[0,1,0,0,2,0,0,3,0],[0]*9])
+    assert np.array_equal(shape_multiply_zero_fill([[1,2,3]],[3,3]),
+                          [[0]*9,[0,1,0,0,2,0,0,3,0],[0]*9])
+
+def test_shape_divide_1234_12_mean():
+    assert np.array_equal(shape_divide([[1,2,3,4]], [1,2]),
+                          [[1.5, 3.5]])
+
+def test_shape_divide_i24_22_mean():
+    assert np.array_equal(shape_divide(np.arange(8).reshape(2,4), [2,2]),
+                          [[10*0.25, 18*0.25]])
+
+def test_shape_divide_i24_22_median():
+    assert np.array_equal(shape_divide(np.arange(8).reshape(2,4), [2,2], reduction='median'),
+                          np.median([[[0,1,4,5],[2,3,6,7]]], axis=-1))
+
+def test_shape_divide_i24_22_first():
+    assert np.array_equal(shape_divide(np.arange(8).reshape(2,4), [2,2], reduction='first'),
+                          [[0,2]])
+
+def test_shape_divide_i24_22_all():
+    assert np.array_equal(shape_divide(np.arange(8).reshape(2,4), [2,2], reduction='all'),
+                          np.reshape([0,2,1,3,4,6,5,7], [2,1,2,2]))
+
 
 def test_interpNaNs_0nnn4_r5():
     assert np.all(interpNaNs(np.array([0,np.nan,np.nan,np.nan,4]))==range(5))
@@ -483,6 +506,11 @@ if __name__ == '__main__':
     test_partitionNumpy_123_2()
     test_shape_multiply_123_12()
     test_shape_multiply_zero_fill_123_12()
+    test_shape_divide_1234_12_mean()
+    test_shape_divide_i24_22_mean()
+    test_shape_divide_i24_22_median()
+    test_shape_divide_i24_22_first()
+    test_shape_divide_i24_22_all()
     test_interpNaNs_0nnn4_r5()
     interpNumpy_1345_half()
     interpNumpy_11354050_half()

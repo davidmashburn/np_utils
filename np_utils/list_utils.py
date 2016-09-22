@@ -102,6 +102,16 @@ def listify(x):
             list(x) if isinstance(x, tuple) else
             [x])
 
+def coerce_to_target_length(x, target_length):
+    '''Coerce singleton values and one-element lists to the target length,
+       otherwise test that len(x) == target_length and throw an error otherwise'''
+    if not hasattr(x, '__len__'):
+        x = [x]
+    if len(x) == 1:
+        x = [x[0]] * target_length
+    assert len(x) == target_length, 'x cannot be coerced to the target length!'
+    return x
+
 ##################
 ## List testing ##
 ##################
