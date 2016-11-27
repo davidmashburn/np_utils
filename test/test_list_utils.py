@@ -105,6 +105,59 @@ def test_rotate_list_of_dicts_1():
 def test_rotate_dict_of_lists_1():
     assert rotate_dict_of_lists(SAMPLE_DL_1) == SAMPLE_LD_1
 
+def test_shallowAdd_1():
+    assert shallowAdd([2, 3], [1, 1]) == [3, 4]
+
+def test_shallowAdd_2():
+    assert shallowAdd([[2], [3]], [1, 1]) == [[3], [4]]
+
+def test_shallowAdd_3():
+    assert shallowAdd([[2, 3, 4], [5, 6, 7]], [10, 20]) == [[12, 13, 14], [25, 26, 27]]
+
+def test_shallowAdd_4():
+    assert (shallowAdd([[2, [3, 4]], [5, [6, 7]]], [[10, 20], [30, 40]]) ==
+            [[12, [23, 24]], [35, [46, 47]]])
+
+def test_shallowAdd_blank():
+    assert shallowAdd([], []) == []
+
+def test_deepAdd_1():
+    assert deepAdd([2, 3], [1, 1]) == [3, 4]
+
+def test_deepAdd_2():
+    assert deepAdd([[2], [3]], [1]) == [[3], [4]]
+
+def test_deepAdd_3():
+    assert deepAdd([[2, 3, 4], [5, 6, 7]], [10, 20, 30]) == [[12, 23, 34], [15, 26, 37]]
+
+def test_deepAdd_4():
+    assert (deepAdd([[2, [3, 4]], [5, [6, 7]]], [10, [20, 30]]) ==
+            [[12, [23, 34]], [15, [26, 37]]])
+
+
+def test_deepAdd_blank():
+    assert deepAdd([], []) == []
+
+def test_shallowAdd_fail_1():
+    failed = None
+    try:
+        shallowAdd([1], [])
+        failed = False
+    except TypeError:
+        failed = True
+
+    assert failed
+
+def test_deepAdd_fail_1():
+    failed = None
+    try:
+        deepAdd([1], [])
+        failed = False
+    except TypeError:
+        failed = True
+
+    assert failed
+
 if __name__ == '__main__':
     test_totuple_1()
     test_totuple_2()
@@ -121,4 +174,15 @@ if __name__ == '__main__':
     test_split_at_boundaries_1()
     test_rotate_dict_of_lists_1()
     test_rotate_list_of_dicts_1()
-
+    test_shallowAdd_1()
+    test_shallowAdd_2()
+    test_shallowAdd_3()
+    test_shallowAdd_4()
+    test_deepAdd_1()
+    test_deepAdd_2()
+    test_deepAdd_3()
+    test_deepAdd_4()
+    test_shallowAdd_blank()
+    test_deepAdd_blank()
+    test_shallowAdd_fail_1()
+    test_deepAdd_fail_1()

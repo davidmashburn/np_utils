@@ -470,7 +470,7 @@ def rotate_dict_of_lists(dl):
 def getMaxDepth(l,depth=0):
     '''Get the maximum depth of any nested structure.
         For a numpy array, this is the same as ndim.'''
-    if not hasattr(l,'__iter__'):
+    if not hasattr(l,'__iter__') or not len(l):
         return depth
     else:
         return max([getMaxDepth(i,depth+1) for i in l])
