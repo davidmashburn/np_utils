@@ -1,6 +1,7 @@
+from __future__ import absolute_import
 import numpy as np
 
-from np_utils import partitionNumpy, map_along_axis
+from .np_utils import partitionNumpy, map_along_axis
 
 # This faster, but more memory-heavy than it needs to be:
 # (aka, np.fromiter could be lower resource, but eh...)

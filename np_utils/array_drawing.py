@@ -13,11 +13,12 @@
    The drawing functions only use integer arithmetic and return a
    list of the coordinates that can be used as array indices
    '''
+from __future__ import absolute_import
 
 from copy import copy
 import numpy as np
 
-from list_utils import totuple, flatten, getMostCommonVal, fL
+from .list_utils import totuple, flatten, getMostCommonVal, fL
 
 # Thanks Wikipedia!!
 # A line-drawing algorithm by the pixel...

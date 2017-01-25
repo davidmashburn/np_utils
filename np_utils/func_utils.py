@@ -112,7 +112,7 @@ def docAppend(newFun,oldFun):
     '''Append oldFun's docstring to the end of newFun's docstring
        Useful for quick documentation of functional modifications'''
     newFun.__doc__ = '\n'.join([ (newFun.__doc__ if newFun.__doc__ else ''),
-                                 '\n\n'+oldFun.func_name+':',
+                                 '\n\n'+oldFun.__name__+':',
                                  (oldFun.__doc__ if oldFun.__doc__ else ''), ])
 
 def convertToSingleArgFun(f):
@@ -139,7 +139,7 @@ def tryOrReturnException(f,exception=Exception,*args,**kwds):
        returns None if there is an exception.'''
     try:
         return f(*args,**kwds)
-    except Exception,e:
+    except Exception as e:
         return e
 
 def compose(*functions):

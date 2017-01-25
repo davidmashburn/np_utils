@@ -55,7 +55,7 @@ def floatIntStringOrNone(string):
 
 def islistlike(x):
     '''Test if something is an iterable but NOT as string'''
-    return hasattr(x, '__iter__') and not isinstance(x, types.StringTypes)
+    return hasattr(x, '__iter__') and not isinstance(x, str)
 
 ######################
 ## String utilities ##

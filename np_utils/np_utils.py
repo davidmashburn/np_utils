@@ -98,18 +98,21 @@ Notable functions by category:
     '''
 
 from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 from itertools import izip
 import numpy as np
 
-from gen_utils import islistlike
-from func_utils import g_inv_f_g
-from list_utils import (totuple, flatten, zipflat, assertSameAndCondense,
+from .gen_utils import islistlike
+from .func_utils import g_inv_f_g
+from .list_utils import (totuple, flatten, zipflat, assertSameAndCondense,
                         split_at, split_at_boundaries, coerce_to_target_length
                        )
 
 from distutils.version import StrictVersion
+from functools import reduce
 if StrictVersion(np.__version__) < StrictVersion('1.11.0'):
-    from np_future import broadcast_arrays
+    from .np_future import broadcast_arrays
 else:
     from numpy import broadcast_arrays
 
@@ -192,7 +195,7 @@ def getValuesAroundPointInArray(arr,point,wrapX=False,wrapY=False):
     if ( 0<x<s[0] or wrapX ) and ( 0<y<s[1] or wrapY ):
         return np.unique( arr[([xi,xf,xi,xf],[yi,yi,yf,yf])] )
     else:
-        print "Point must be interior to the array!"
+        print("Point must be interior to the array!")
         return None
 
 ######################################################

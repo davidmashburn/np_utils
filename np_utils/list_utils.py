@@ -20,6 +20,7 @@ Most notably:
     fancyIndexingListM1 (alias fLm1) -> like fL, but subtracts 1 from all indices recursively
     
     There are other functions here as well, but these are the most useful/novel'''
+from __future__ import print_function
 
 from copy import deepcopy
 import operator
@@ -272,7 +273,7 @@ def _function_ize(x):
     elif hasattr(x, '__iter__'):
         # x is a list of some kind, so use a generator to step through the items
         g = (i for i in x)
-        x = lambda i: g.next()
+        x = lambda i: next(g)
     else:
         # x is a boolean value, so make a simple function
         bool_val = x
@@ -709,7 +710,7 @@ class fancyIndexingListM1(fancyIndexingList):
         elif type(x)==int:
             return self.m1(x)
         else:
-            print "Not sure what you're feeding me... signed, fancyIndexingListM1.m1gen"
+            print("Not sure what you're feeding me... signed, fancyIndexingListM1.m1gen")
             return self.m1(x)
     def new_fL(self,*args,**kwds):
         '''Just a wrapper around the class constructor for a new instance, fancyIndexingListM1()'''

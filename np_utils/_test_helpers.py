@@ -1,4 +1,5 @@
 '''Helper functions for use in tests of the other sub-modules'''
+from __future__ import print_function
 
 import numpy as np
 
@@ -12,7 +13,7 @@ def assert_index_groups_same(x, y):
         try:
             assert np.array_equal(i, j)
         except:
-            print i, j
+            print(i, j)
             raise
 
 def _get_sample_rec_array():

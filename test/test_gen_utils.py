@@ -11,7 +11,7 @@ def test_floatIntStringOrNone_2():
     assert floatIntStringOrNone('1.5') == 1.5
 
 def test_floatIntStringOrNone_3():
-    assert floatIntStringOrNone('15L') == 15L
+    assert floatIntStringOrNone('15L') == 15
 
 def test_floatIntStringOrNone_4():
     assert floatIntStringOrNone('1e5') == 1e5

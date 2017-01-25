@@ -1,3 +1,4 @@
+from __future__ import print_function
 import np_utils
 from np_utils import *
 
@@ -34,7 +35,7 @@ def test_double_wrap():
     @doublewrap
     def decc(f, **dec_kwds):
         def newf(*args, **kwds):
-            print 'dec_kwds, kwds:', dec_kwds, kwds
+            print('dec_kwds, kwds:', dec_kwds, kwds)
             that = kwds.pop('extra', dec_kwds.get('extra', 0))
             return f(*args, **kwds) + that
         
