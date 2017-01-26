@@ -1,3 +1,7 @@
+import sys
+
+PYTHON2 = sys.version_info < (3, 0)
+
 import np_utils
 from np_utils import *
 
@@ -11,7 +15,8 @@ def test_floatIntStringOrNone_2():
     assert floatIntStringOrNone('1.5') == 1.5
 
 def test_floatIntStringOrNone_3():
-    assert floatIntStringOrNone('15L') == 15
+    if PYTHON2:
+        assert floatIntStringOrNone('15L') == 15
 
 def test_floatIntStringOrNone_4():
     assert floatIntStringOrNone('1e5') == 1e5

@@ -3,12 +3,12 @@
    Fair warning, this is NOT an exhaustive suite.'''
 from __future__ import print_function, division
 from builtins import zip, range
-
+from copy import copy
+from collections import Counter
 from future.utils import lrange
 
 import numpy as np
-from copy import copy
-from collections import Counter
+
 import np_utils
 from np_utils import *
 from np_utils._test_helpers import _get_sample_rec_array
@@ -87,24 +87,26 @@ def test_np_groupby_3():
 
 def test_np_groupby_4():
     a = _get_sample_rec_array()
+    dtype1 = a.dtype[1] # Either '<S4' or '<U4'
     g = np_groupby(a[['m', 'n']], a,
                    lambda x: np.mean(x['o']),
                    lambda x: np.std(x['o']),
                    lambda x: np.min(x['p']),
                    names=['m', 'n', 'mean_o', 'std_o', 'min_p'])
     assert g.shape == (200,)
-    assert g.dtype == [('m', '|S4'), ('n', '<i8'), ('mean_o', '<f8'),
+    assert g.dtype == [('m', dtype1), ('n', '<i8'), ('mean_o', '<f8'),
                        ('std_o', '<f8'), ('min_p', '<f8')]
 
 def test_np_groupby_5():
     a = _get_sample_rec_array()
+    dtype1 = a.dtype[1] # Either '<S4' or '<U4'
     def compute_some_thing(x):
         o, p = x['o'], x['p']
         return np.mean(o) / np.std(o) * np.min(p)
     g = np_groupby(a[['m', 'n']], a, compute_some_thing,
                    names=['m', 'n', 'its_complicated'])
     assert g.shape == (200,)
-    assert g.dtype == [('m', '|S4'), ('n', '<i8'), ('its_complicated', '<f8')]
+    assert g.dtype == [('m', dtype1), ('n', '<i8'), ('its_complicated', '<f8')]
 
 def test_rec_groupby_1():
     a = _get_sample_rec_array()
