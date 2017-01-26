@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 '''Tests for some functions in np_utils.py. Use nose to run them.
    Fair warning, this is NOT an exhaustive suite.'''
+from __future__ import print_function, division
+from builtins import zip, range
+
+from future.utils import lrange
 
 import numpy as np
 from copy import copy
@@ -39,7 +43,7 @@ def test_haselement_3D():
 def test_true_where_1():
     assert np.array_equal(true_where(4, [0, 2]),
                           [1, 0, 1, 0])
-    assert np.array_equal(true_where([4] * 2, [range(4)] * 2),
+    assert np.array_equal(true_where([4] * 2, [lrange(4)] * 2),
                           np.eye(4))
 
 def test_true_where_2():
@@ -151,6 +155,7 @@ def test_is_first_occurrence_and_1d_3():
 
 def test_get_first_indices_1():
     a = [0,1,2,3,3,4,5,12,4,8]
+    print(get_first_indices(a, [1, 4, 12]))
     assert np.all(get_first_indices(a, [1, 4, 12]) == [1, 5, 7])
     assert np.all(get_first_indices(a, [1, 4, 12,13]) == [1, 5, 7, None])
     assert np.all(get_first_indices(a, [1, 4, 12, 13], missing='len') == [1, 5, 7, len(a)])
@@ -217,7 +222,7 @@ def test_limitInteriorPoints_r5_2_True():
     assert limitInteriorPoints(range(5),2,uniqueOnly=True) == [0,1,3,4]
 
 def test_limitInteriorPoints_r5_7_True():
-    assert limitInteriorPoints(range(5),7,uniqueOnly=True) == range(5)
+    assert limitInteriorPoints(range(5),7,uniqueOnly=True) == lrange(5)
     
 def test_limitInteriorPoints_r5_7_False():
     assert limitInteriorPoints(range(5),7,uniqueOnly=False) == [0,0,1,2,2,2,3,4,4]
@@ -270,7 +275,7 @@ def test_shape_divide_i24_22_all():
 
 
 def test_interpNaNs_0nnn4_r5():
-    assert np.all(interpNaNs(np.array([0,np.nan,np.nan,np.nan,4]))==range(5))
+    assert np.all(interpNaNs(np.array([0,np.nan,np.nan,np.nan,4]))==lrange(5))
 
 # A couple working but not-that-great interpolation functions:
 def interpNumpy_1345_half():
@@ -406,7 +411,7 @@ def test_apply_at_depth_1():
     np.array_equal(apply_at_depth(np.sum, a),
                    apply_at_depth_ravel(np.sum, a))
     
-    for depth in [0] + range(-4,4):
+    for depth in [0] + lrange(-4,4):
         assert np.array_equal(apply_at_depth(np.sum, a, depth=depth),
                               apply_at_depth_ravel(np.sum, a, depth=depth))
     assert apply_at_depth(np.sum, a, depth=0) == np.sum(a)
@@ -419,7 +424,7 @@ def test_apply_at_depth_1():
     assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depth=0),
                           [[j - 1 for j in i]
                            for i in a])
-    for depth in [0] + range(-4,4):
+    for depth in [0] + lrange(-4,4):
         assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depth=depth),
                               a - 1)
 

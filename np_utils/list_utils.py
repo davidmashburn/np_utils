@@ -21,11 +21,15 @@ Most notably:
     
     There are other functions here as well, but these are the most useful/novel'''
 from __future__ import print_function
+from builtins import next, zip, map, str, range
+from past.builtins import basestring
 
 from copy import deepcopy
 import operator
-from itertools import izip, chain, islice
+from itertools import chain, islice
 from collections import Counter
+
+from future.utils import viewitems, lzip, lmap, lrange
 
 
 #################################
@@ -138,8 +142,14 @@ def getMostCommonVal(l):
            _getMostCommonVal([1,2,4,3,4,5,6,3,5]) -> 3'''
     return Counter(l).most_common()[0][0]
 
+def iter_to_list(l):
+    '''Convert any iterable without a length to a list
+       Otherwise pass it though unchanged (list, tuple, array, etc)'''
+    return l if hasattr(l, '__len__') else list(l)
+
 def all_equal(l, equality_function=operator.eq):
     '''Test if all elements in a list are the same'''
+    l = iter_to_list(l)
     if len(l)<2:
         return True
     
@@ -152,6 +162,7 @@ def assertSameAndCondense(l, message='List values differ!',
        and then return the common value
        This acts as a safe funnel in exploratory data processing,
        cutting a large same-valued list down to a single value.'''
+    l = iter_to_list(l)
     assert all_equal(l), message
     return l[0]
 
@@ -183,12 +194,12 @@ def flatten(l,repetitions=1):
 def zipflat(*args):
     '''Like zip, but flattens the result.
        (itertools.izip is used internally for speed/memory usage)'''
-    return [j for i in izip(*args) for j in i]
+    return [j for i in zip(*args) for j in i]
 
 def ziptranspose(l):
     '''Tranpose the two outer dimensions of a nest list
-       (This is just a wrapper around zip(*l))'''
-    return zip(*l)
+       (This is just a wrapper around zip(*l) that returns a list)'''
+    return lzip(*l)
 
 def partition(l,n,clip=True):
     '''Partition list "l" into "n"-sized chunks
@@ -209,9 +220,9 @@ def zipIntoPairs(l,cycle=False,offset=1):
        If cycle is True, pair the end and beginning as well
        If offset is greater than 1, pair separated elements'''
     if cycle:
-        return zip(l,roll(l,-offset))
+        return lzip(l,roll(l,-offset))
     else:
-        return zip(l[:-offset],l[offset:])
+        return lzip(l[:-offset],l[offset:])
 
 def intersperse(l,separator):
     '''Intersperse a separator between all items
@@ -253,8 +264,8 @@ def split_at_boundaries(l, boundaries):
         return [l]
     
     start_end = chain([[0, boundaries[0]]],
-                      izip(islice(boundaries, 0, lenl-1),
-                           islice(boundaries, 1, None)),
+                      zip(islice(boundaries, 0, lenl-1),
+                          islice(boundaries, 1, None)),
                       [[boundaries[-1], lenl]])
     count = len(boundaries) + 1
     return [l[start:end] for start, end in start_end]
@@ -342,11 +353,12 @@ def groupByFunction(l,f,appendFun=None):
        
        Another simple way to acheive this would be using itertools.groupby:
        
-       from itertools import groupby, imap
+       from future.utils import lmap
+       from itertools import groupby
        if appendFun==None:
-           return { k:list(v) for k,v in groupby(l,f) }
+           return {k: list(v) for k, v in groupby(l,f)}
        else:
-           return { k:list(imap(appendFun,v)) for k,v in groupby(l,f) }
+           return {k: lmap(appendFun, v) for k, v in groupby(l,f)}
        I may change this in a future version after testing it more.
        '''
     groupDict = {}
@@ -400,14 +412,14 @@ def getChainsFromConnections(connections,checkConnections=True):
        '''
     connections = deepcopy(connections) # Protect the input from modification
     if checkConnections: # Check that there is no branching
-        assert all( len(v)<3 for k,v in connections.iteritems() ), 'Aborting; this network has branching'
+        assert all( len(v)<3 for k,v in viewitems(connections) ), 'Aborting; this network has branching'
     
     chains = []
     while len(connections): # loop over possible chains
         # Pick a starting point (an end point if possible)
-        currPt = _firstOrOther( [ pt for pt,conn in connections.iteritems()
-                                     if len(conn)==1 ],
-                                connections.keys()[0] )
+        currPt = _firstOrOther([pt for pt,conn in viewitems(connections)
+                                   if len(conn)==1],
+                               next(iter(connections))) # was connections.keys()[0]
         # Form a chain and move the current point forward
         chain = [currPt]
         currPt = connections.pop(currPt)[0]
@@ -435,7 +447,7 @@ def interp(l,index):
 #####################################
 
 def dict_apply(f, d):
-    return {k: f(v) for k, v in d.iteritems()}
+    return {k: f(v) for k, v in viewitems(d)}
 
 def dict_key_union(dicts):
     '''Form the superset (union) of all keys in all dictionaries'''
@@ -460,7 +472,7 @@ def rotate_dict_of_lists(dl):
        Skips entries for shorter lists'''
     num_dicts = max(map(len, dl.values()))
     return [{k: v[i]
-             for k, v in dl.iteritems()
+             for k, v in viewitems(dl)
              if i < len(v)}
             for i in range(num_dicts)]
 
@@ -704,7 +716,7 @@ class fancyIndexingListM1(fancyIndexingList):
     def m1gen(self,x):
         '''m1, but able to handle iterables (lists, tuples, ...) and slices as well'''
         if hasattr(x,'__iter__'):
-            return map(self.m1gen,x)
+            return lmap(self.m1gen,x)
         elif type(x)==slice:
             return slice(self.m1(x.start),self.m1(x.stop),x.step)
         elif type(x)==int:

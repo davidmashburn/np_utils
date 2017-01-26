@@ -1,3 +1,4 @@
+from __future__ import division
 import np_utils
 from np_utils import *
 

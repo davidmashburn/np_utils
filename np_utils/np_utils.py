@@ -100,12 +100,15 @@ Notable functions by category:
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
-from itertools import izip
+from builtins import str, map, zip, range
+
+from future.utils import lmap, lrange
+
 import numpy as np
 
 from .gen_utils import islistlike
 from .func_utils import g_inv_f_g
-from .list_utils import (totuple, flatten, zipflat, assertSameAndCondense,
+from .list_utils import (totuple, flatten, zipflat, all_equal,
                         split_at, split_at_boundaries, coerce_to_target_length
                        )
 
@@ -145,8 +148,8 @@ def build_grid(center, steps, nsteps):
        The output will be a list of ND arrays with shape equal to nsteps'''
     steps = steps if hasattr(steps, '__iter__') else [steps] * len(center)
     nsteps = nsteps if hasattr(nsteps, '__iter__') else [nsteps] * len(center)
-    assertSameAndCondense(map(len, (center, steps, nsteps)),
-                          'All the arguments must have the same length!')
+    assert all_equal(map(len, (center, steps, nsteps))), \
+           'All the arguments must have the same length!'
     return np.meshgrid(*[np.linspace(c-(n-1.)/2 * s, c+(n-1.)/2 * s, n)
                          for c, s, n in zip(center, steps, nsteps)],
                        indexing='ij')
@@ -781,7 +784,7 @@ def get_array_subgroups(arr, grouping_arr):
        Then d[id] will be a subarray of arr where arr['foreign_id']==id'''
     assert len(arr) == len(grouping_arr), 'Arrays must have the same length!'
     keys, index_groups = get_index_groups(grouping_arr)
-    return {k: arr[inds] for k, inds in izip(keys, index_groups)}
+    return {k: arr[inds] for k, inds in zip(keys, index_groups)}
 
 def _split_records(arr):
     '''Split out individal arrays from records as a list of views'''
@@ -907,7 +910,7 @@ def find_first_occurrence_1d(arr, get_keys=True):
     '''Equivalent to find_first_occurrence(arr.ravel()), but should be much faster
        (uses the very fast get_index_groups function)'''
     keys, index_groups = get_index_groups(arr)
-    first_occurrences = map(np.min, index_groups)
+    first_occurrences = lmap(np.min, index_groups)
     return (keys, first_occurrences) if get_keys else first_occurrences
 
 def is_first_occurrence(arr):
@@ -932,8 +935,8 @@ def get_first_indices(arr, values, missing=None):
     assert missing in [None, -1, 'len', 'fail'], bad_str
     arr = np.asanyarray(arr)
     
-    first_inds = dict(izip(*find_first_occurrence_1d(arr)))
-    inds = map(first_inds.get, values)
+    first_inds = dict(zip(*find_first_occurrence_1d(arr)))
+    inds = lmap(first_inds.get, values)
     
     if missing == 'fail' and None in inds:
         raise Exception('Value Error! One of the values is not in arr')
@@ -960,7 +963,7 @@ def box_list(l, box_shape=None):
     assert np.prod(box_shape) == len(l), 'shape must match the length of l'''
     boxed = np.empty(box_shape, dtype=np.object)
     boxed_flat = boxed.ravel()
-    boxed_flat[:] = map(np.asanyarray, l)
+    boxed_flat[:] = lmap(np.asanyarray, l)
     return boxed
 
 def box(arr, depth=0):
@@ -990,7 +993,7 @@ def is_boxed(a):
 def _broadcast_arr_list(l):
     '''Helper function to broadcast all elements in a list to arrays with a common shape
        Uses broadcast_arrays unless there is only one box'''
-    arr_list = map(np.asanyarray, l)
+    arr_list = lmap(np.asanyarray, l)
     return (broadcast_arrays(*arr_list)
             if len(arr_list) > 1 else
             arr_list)
@@ -1030,7 +1033,7 @@ def map_along_axis(f, arr, axis):
     '''
     arr = np.asanyarray(arr)
     axis = axis + arr.ndim if axis < 0 else axis
-    new_dim_order = [axis] + range(axis) + range(axis+1, arr.ndim)
+    new_dim_order = [axis] + lrange(axis) + lrange(axis+1, arr.ndim)
     return np.array([f(a) for a in arr.transpose(new_dim_order)])
 
 def apply_at_depth_ravel(f, arr, depth=0):
@@ -1123,11 +1126,11 @@ def apply_at_depth(f, *args, **kwds):
     depths = (depths if hasattr(depths, '__len__') else
               [depths] * len(args))
     assert len(args) == len(depths)
-    boxed_list = map(box, args, depths)
+    boxed_list = lmap(box, args, depths)
     bbl = _broadcast_arr_list(boxed_list)
     bb_shape = box_shape(bbl[0])
-    bbl_flat = map(np.ravel, bbl)
-    results = map(f, *bbl_flat)
+    bbl_flat = lmap(np.ravel, bbl)
+    results = lmap(f, *bbl_flat)
     results = (results if not broadcast_results else
                _broadcast_arr_list(results))
     arr = np.array(results)

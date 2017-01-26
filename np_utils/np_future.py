@@ -1,6 +1,7 @@
 # coding: utf-8
 
 from __future__ import division, absolute_import, print_function
+from builtins import range
 
 import numpy.core.numeric as _nx
 import numpy as np

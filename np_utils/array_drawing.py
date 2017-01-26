@@ -14,6 +14,9 @@
    list of the coordinates that can be used as array indices
    '''
 from __future__ import absolute_import
+from __future__ import division
+from builtins import zip
+from builtins import range
 
 from copy import copy
 import numpy as np
@@ -33,7 +36,7 @@ def BresenhamFunctionOld(p0,p1):
         y0,y1 = y1,y0 # swap
     deltax = x1-x0
     deltay = abs(y1-y0)
-    error = deltax/2
+    error = deltax // 2
     y = y0
     if y0 < y1:
         ystep=1

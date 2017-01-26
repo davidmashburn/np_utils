@@ -13,6 +13,8 @@ Flow control utilities:
                         2 maixima and returns the global min and max
                         using callFunctionIfNotNone
 '''
+from builtins import map, int
+
 
 import os
 import types
@@ -45,7 +47,7 @@ def floatIntStringOrNone(string):
     if string=='None':
         return None
     
-    for fun in (int, long, float):
+    for fun in (int, float):
         try:
             return fun(string)
         except ValueError:

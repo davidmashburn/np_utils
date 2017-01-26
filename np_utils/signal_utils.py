@@ -1,4 +1,6 @@
 from __future__ import absolute_import
+from __future__ import division
+from builtins import range
 import numpy as np
 
 from .np_utils import partitionNumpy, map_along_axis
@@ -30,7 +32,7 @@ def _smooth_fft(a, chunk_size, smoothing_factor=4):
     n, c = len(a), chunk_size
     cs = c // smoothing_factor
     return np.array([np.fft.fft(a[i:i + c])
-                     for i in xrange(0, n, cs)
+                     for i in range(0, n, cs)
                      if i + c <= n])
 
 def rolling_fft(a, chunk_size=10000, smoothing_factor=None):
