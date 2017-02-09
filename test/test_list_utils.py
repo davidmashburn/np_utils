@@ -88,6 +88,12 @@ def test_iterToX_splat_2():
     assert iterToX_splat(list_splat, abc, break_strings=False) == abc
     assert iterToX_splat(list_splat, [abc], break_strings=False) == [abc]
 
+def test_partition_range_1():
+    assert list(partition_range(29, 10)) == [range(0, 10), range(10, 20), range(20, 29)]
+    assert list(partition_range(30, 10)) == [range(0, 10), range(10, 20), range(20, 30)]
+    assert list(partition_range(31, 10)) == [range(0, 10), range(10, 20), range(20, 30), range(30, 31)]
+    assert list(partition_range(35, 10)) == [range(0, 10), range(10, 20), range(20, 30), range(30, 35)]
+
 def test_split_list_on_condition_1():
     assert split_list_on_condition(TEST_SET, lambda x: x % 2 == 0) == ([0, 2, 4, 6, 8], [1, 3, 5, 7, 9])
 
@@ -171,6 +177,7 @@ if __name__ == '__main__':
     test_iterToX_3()
     test_iterToX_splat_1()
     test_iterToX_splat_2()
+    test_partition_range_1()
     test_split_list_on_condition_1()
     test_split_list_on_condition_2()
     test_split_list_on_condition_3()

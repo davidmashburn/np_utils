@@ -201,6 +201,16 @@ def ziptranspose(l):
        (This is just a wrapper around zip(*l) that returns a list)'''
     return lzip(*l)
 
+def partition_range(x, n):
+    '''Return a generator for a series of chunked ranges that end at x
+       partition_range(x, 1) <==> range(x)
+       Examples:
+          list(partition_range(19, 10)) -> [range(0, 10), range(10, 19)]
+          list(partition_range(20, 10)) -> [range(0, 10), range(10, 20)]
+          list(partition_range(21, 10)) -> [range(0, 10), range(10, 20), range(20, 21)]
+       '''
+    return (range(i, min(x, i+n)) for i in range(0, x, n))
+
 def partition(l,n,clip=True):
     '''Partition list "l" into "n"-sized chunks
        clip chops off whatever does not fit into n-sized chunks at the end'''
