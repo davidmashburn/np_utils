@@ -486,6 +486,44 @@ def rotate_dict_of_lists(dl):
              if i < len(v)}
             for i in range(num_dicts)]
 
+def key_collector(x, collection=None):
+    '''Recursively collect all the keys that a nested structure at all depths
+       x can be a <list/dict> of <list/dict/other> of ...
+       with any structure'''
+    collection = set()
+    
+    if hasattr(x, 'keys') and hasattr(x, 'values'):
+        collection.update(x.keys())
+        for v in x.values():
+            collection.update(key_collector(v))
+    elif hasattr(x, '__iter__'):
+        for i in x:
+            collection.update(key_collector(i))
+    
+    return collection
+
+def directional_key_collector(x, collection=None, last_key='<TOP LEVEL>', skip_list=False):
+    '''Recursively collect all the keys that a nested structure at all depths
+       x can be a <list/dict> of <list/dict/other> of ...
+       with any structure
+       This version returns pairs of keys like:
+       (last_key, next_key)
+       where next_key is inside a nested structure containing last_key
+       special keys called <TOP_LEVEL> and <LIST> are used for last_key
+       when the key's dictionary is the object or is in inside a list'''
+    collection = set()
+    
+    if hasattr(x, 'keys') and hasattr(x, 'values'):
+        for k, v in x.iteritems():
+            collection.add((last_key, k))
+            collection.update(directional_key_collector(v, last_key=k, skip_list=skip_list))
+    elif hasattr(x, '__iter__'):
+        lk = last_key if skip_list else '<LIST>'
+        for i in x:
+            collection.update(directional_key_collector(i, last_key=lk, skip_list=skip_list))
+    
+    return collection
+
 ##########################################
 ## Some utilities for nested structures ##
 ##########################################
