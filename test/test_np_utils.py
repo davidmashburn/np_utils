@@ -108,6 +108,60 @@ def test_np_groupby_5():
     assert g.shape == (200,)
     assert g.dtype == [('m', dtype1), ('n', '<i8'), ('its_complicated', '<f8')]
 
+def test_group_transform_1():
+    arr = _get_sample_rec_array()
+    # Sort items based on 'o' in groups based on 'm':
+    sorted_o = group_transform(arr['m'], arr['o'], np.sort, np.float)
+    assert len(sorted_o) == len(arr)
+    assert not np.array_equal(sorted_o, arr['o'])
+    assert not np.array_equal(sorted_o, np.sort(arr['o']))
+    assert np.array_equal(np.sort(sorted_o), np.sort(arr['o']))
+
+def test_group_transform_2():
+    arr = _get_sample_rec_array()
+    # Rank items based on 'o' and 'p' in groups based on 'm':
+    simple_rank = lambda x: np.argsort(x) + 1
+    ranked_op = group_transform(arr['m'], arr[['o', 'p']], simple_rank, np.int)
+    assert ranked_op.max() < len(arr)
+
+def test_group_transform_3():
+    arr = _get_sample_rec_array()
+    # Subtract the group mean (background) for 'p' in groups based on 'm':
+    background_subtract = lambda x: x - x.mean()
+    bg_removed_p = group_transform(arr['m'], arr['p'], background_subtract, np.float)
+
+    # Normalize groups (divide by mean) for 'o' in groups based on 'm' and 'n':
+    simple_normalize = lambda x: x / x.mean()
+    normalized_o = group_transform(arr[['m', 'n']], arr['o'], simple_normalize, np.float)    
+
+    assert not np.array_equal(bg_removed_p, background_subtract(arr['p']))
+    assert np.isclose(np.mean(bg_removed_p), 0)
+    assert not np.array_equal(normalized_o, simple_normalize(arr['o']))
+    assert np.isclose(np.mean(normalized_o), 1)
+
+def test_np_and_rec_groupby_full_1():
+    arr = _get_sample_rec_array()
+    simple_rank = lambda x: np.argsort(x) + 1
+    background_subtract = lambda x: x - x.mean()
+    simple_normalize = lambda x: x / x.mean()
+    
+    n = np_groupby_full(arr[['m', 'n']], arr,
+       (lambda x: simple_rank(x['o']), np.int),
+       (lambda x: simple_rank(x[['o', 'p']]), np.int),
+       (lambda x: background_subtract(x['o']), np.float),
+       (lambda x: simple_normalize(x['p']), np.float),
+       names=['m', 'n', 'rank_o', 'rank_op', 'bg_sub_o', 'norm_p']
+    )
+    
+    r = rec_groupby_full(arr, ['m', 'n'],
+        (simple_rank,         np.int,   'o',        'rank_o'),
+        (simple_rank,         np.int,   ['o', 'p'], 'rank_op'),
+        (background_subtract, np.float, 'o',        'bg_sub_o'),
+        (simple_normalize,    np.float, 'p',        'norm_p')
+    )
+    
+    assert np.array_equal(n, r)
+
 def test_rec_groupby_1():
     a = _get_sample_rec_array()
     assert np.all(rec_groupby(a, 'n', (np.max, 'o', 'max_o')) ==
@@ -151,7 +205,7 @@ def test_is_first_occurrence_and_1d_3():
     def stupid_version(x):
         return np.array([(p not in x[:i]) for i,p in enumerate(x)]) # This will work, but is very slow
 
-    t = reshape_repeating(np.arange(6), (40,3))
+    t = reshape_repeating(np.arange(6), (40, 3))
     assert np.array_equal(stupid_version(t), is_first_occurrence(t))
     assert np.array_equal(is_first_occurrence(t.ravel()), is_first_occurrence_1d(t))
 
@@ -488,6 +542,10 @@ if __name__ == '__main__':
     test_np_groupby_3()
     test_np_groupby_4()
     test_np_groupby_5()
+    test_group_transform_1()
+    test_group_transform_2()
+    test_group_transform_3()
+    test_np_and_rec_groupby_full_1()
     test_rec_groupby_1()
     test_rec_groupby_2()
     test_rec_groupby_3()

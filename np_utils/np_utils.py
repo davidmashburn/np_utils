@@ -357,7 +357,7 @@ def reshape_repeating(arr, new_shape):
         return reshape_smaller(arr, new_shape)
     else:
         arr_flat = np.ravel(arr)
-        repeats = np.ceil(new_size / arr.size)
+        repeats = np.ceil(new_size / arr.size).astype(np.int)
         s = np.lib.stride_tricks.as_strided(arr_flat, (repeats, arr.size), (0, arr.itemsize))
         assert arr_flat.base is arr
         assert s.base.base is arr_flat
@@ -850,6 +850,63 @@ def np_groupby(keyarr, arr, *functions, **kwds):
               for f in functions]
     return np.rec.fromarrays(_split_records(keys) + groups, names=names)
 
+def _group_transform(arr, index_groups, fun, result_dtype):
+    '''Helper function for group_transform'''
+    result = np.empty(len(arr), dtype=result_dtype)
+    for g in index_groups:
+        result[g] = fun(arr[g])
+    
+    return result
+
+def group_transform(keyarr, arr, fun, result_dtype):
+    '''Perform a non-reducing operation that acts on groups
+       This results in a new array the same length as the original
+       (rank, normalize, sort, etc.)
+       
+       Examples:
+       (assuming arr has fields 'm', 'n', 'o', 'p')
+       
+       # Sort items based on 'o' in groups based on 'm':
+       sorted_o = group_transform(arr['m'], arr['o'], np.sort, np.float)
+       
+       # Rank items based on 'o' and 'p' in groups based on 'm':
+       simple_rank = lambda x: np.argsort(x) + 1
+       ranked_op = group_transform(arr['m'], arr[['o', 'p']], simple_rank, np.int)
+       
+       # Subtract the group mean (background) for 'p' in groups based on 'm':
+       background_subtract = lambda x: x - x.mean()
+       bg_removed_p = group_transform(arr['m'], arr['p'], background_subtract, np.float)
+       
+       # Normalize groups (divide by mean) for 'o' in groups based on 'm' and 'n':
+       simple_normalize = lambda x: x / x.mean()
+       normalized_o = group_transform(arr[['m', 'n']], arr['o'], simple_normalize, np.float)
+       '''
+    keys, index_groups = get_index_groups(keyarr)
+    return _group_transform(arr, index_groups, fun, result_dtype)
+
+def np_groupby_full(keyarr, arr, *functions_result_dtypes, **kwds):
+    '''Special case of np_groupby where the end result is an array the
+       same length as the original (rank, normalize, etc.)
+       
+       Example:
+       
+       simple_rank = lambda x: np.argsort(x) + 1
+       background_subtract = lambda x: x - x.mean()
+       simple_normalize = lambda x: x / x.mean()
+   
+       result = np_groupby_full(arr[['m', 'n']], arr,
+           (lambda x: simple_rank(x['o']), np.int),
+           (lambda x: simple_rank(x[['o', 'p']]), np.int),
+           (lambda x: background_subtract(x['o']), np.float),
+           (lambda x: simple_normalize(x['p']), np.float),
+           names=['m', 'n', 'rank_o', 'rank_op', 'bg_sub_o', 'norm_p'])
+       '''
+    names = kwds.pop('names', None)
+    keys, index_groups = get_index_groups(keyarr)
+    results = [_group_transform(arr, index_groups, fun, result_dtype)
+               for fun, result_dtype in functions_result_dtypes]
+    return np.rec.fromarrays(_split_records(arr) + results, names=names)
+
 def fields_view(arr, fields):
     '''Select fields from a record array without a copy
        Taken from:
@@ -888,11 +945,40 @@ def rec_groupby(a, keynames, *fun_fields_name):
        '''
     keynames = list(keynames) if islistlike(keynames) else [keynames]
     keyarr = fields_view(a, keynames)
-    funs, fields_list, names = zip(*fun_fields_name)
     functions = [_outfielder(fun, fields)
                  for fun, fields, name in fun_fields_name]
     names = [i[-1] for i in fun_fields_name]
-    return np_groupby(keyarr, a, *functions, names=keynames + names)
+    return np_groupby(keyarr, a, *functions, names=(keynames + names))
+
+def rec_groupby_full(a, keynames, *fun_dtype_fields_name):
+    '''A special version of np_groupby for record arrays, somewhat similar
+       to the function found in matplotlib.mlab.rec_groupby.
+       
+       This is basically a wrapper around np_groupy_full that automatically
+       generates lambda's like the ones in the np_groupby_full doc string.
+       That same call would look like this using rec_grouby_full:
+       
+       simple_rank = lambda x: np.argsort(x) + 1
+       background_subtract = lambda x: x - x.mean()
+       simple_normalize = lambda x: x / x.mean()
+       
+       rec_groupby_full(a, ['m', 'n'],
+           (simple_rank,         np.int,   'o',        'rank_o'),
+           (simple_rank,         np.int,   ['o', 'p'], 'rank_op'),
+           (background_subtract, np.float, 'o',        'bg_sub_o'),
+           (simple_normalize,    np.float, 'p',        'norm_p')
+       )
+       
+       
+       In general, this function is faster than matplotlib.mlab, but not
+       as fast as pandas and probably misses some corner cases for each :)
+       '''
+    keynames = list(keynames) if islistlike(keynames) else [keynames]
+    keyarr = fields_view(a, keynames)
+    functions_result_dtypes = [(_outfielder(fun, fields), dtype)
+                               for fun, dtype, fields, name in fun_dtype_fields_name]
+    names = [i[-1] for i in fun_dtype_fields_name]
+    return np_groupby_full(keyarr, a, *functions_result_dtypes, names=(keynames + names))
 
 def find_first_occurrence(arr):
     '''Find the first occurrence (index) of each unique value (subarray) in arr.
@@ -951,6 +1037,22 @@ def get_first_indices(arr, values, missing=None):
         inds = [default if i is None else i for i in inds]
     
     return np.array(inds)
+
+def merge_recarrays(arrays):
+    '''Fast version of join for structured arrays
+       from http://stackoverflow.com/questions/5355744/numpy-joining-structured-arrays
+       (Similar to numpy.lib.recfunctions.merge_array)
+       
+       <CURRENTLY UNTESTED HERE>
+    '''
+    sizes = numpy.array([a.itemsize for a in arrays])
+    offsets = numpy.r_[0, sizes.cumsum()]
+    n = len(arrays[0])
+    joint = numpy.empty((n, offsets[-1]), dtype=numpy.uint8)
+    for a, size, offset in zip(arrays, sizes, offsets):
+        joint[:,offset:offset+size] = a.view(numpy.uint8).reshape(n,size)
+    dtype = sum((a.dtype.descr for a in arrays), [])
+    return joint.ravel().view(dtype)
 
 ############################
 ## Boxing (nested arrays) ##
