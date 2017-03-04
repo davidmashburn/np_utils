@@ -1,25 +1,28 @@
 #!/usr/bin/env python
 '''Utilities for list and tuple manipulation by David Mashburn.
 Most notably:
-    flatten -> drop 1 (or more if specified) levels of nesting from a data structure
-    zipflat -> returns the flattened form of a zip
-    ziptranspose -> pure-function version of zip(*_)
-    deletecases -> remove all occurrences of each of cases from a list
-    removeDuplicates -> order-perserving, duplicate-remover
-    partition -> partition a list into n-sized chunks
-    roll -> list version of numpy.roll
-    interp -> floating point "indexing" using linear interpolation when necessary
-    
-    totuple -> recursive conversion of any nested iterable to tuple
-    makeTuple -> like totuple, but for non-iterables, returns (a,)
-    getMaxDepth -> get the maximum depth level of a nested list
-    iterToX -> like totuple, but for any conversion
-    
-    fancyIndexingList (alias fL) -> powerful numpy-like indexing for lists,
-                                    use like fl(someList)[someIndexingStuff]
-    fancyIndexingListM1 (alias fLm1) -> like fL, but subtracts 1 from all indices recursively
-    
-    There are other functions here as well, but these are the most useful/novel'''
+
+flatten -> drop 1 (or more if specified) levels of nesting from a data structure
+zipflat -> returns the flattened form of a zip
+ziptranspose -> pure-function version of zip(*_)
+deletecases -> remove all occurrences of each of cases from a list
+removeDuplicates -> order-perserving, duplicate-remover
+partition -> partition a list into n-sized chunks
+roll -> list version of numpy.roll
+interp -> floating point "indexing" using linear interpolation when necessary
+
+totuple -> recursive conversion of any nested iterable to tuple
+makeTuple -> like totuple, but for non-iterables, returns (a,)
+getMaxDepth -> get the maximum depth level of a nested list
+iterToX -> like totuple, but for any conversion
+
+fancyIndexingList (alias fL) -> powerful numpy-like indexing for lists,
+                                use like fl(someList)[someIndexingStuff]
+fancyIndexingListM1 (alias fLm1) -> like fL, but subtracts 1 from all indices recursively
+
+There are other functions here as well, but these are the most useful/novel
+'''
+
 from __future__ import print_function
 from builtins import next, zip, map, str, range
 from past.builtins import basestring
