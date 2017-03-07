@@ -17,5 +17,6 @@ setup(
     long_description=open('README.rst').read(),
     install_requires=[
                       'numpy>=1.0',
+                      'future>=0.16',
                      ],
 )
