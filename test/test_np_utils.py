@@ -143,6 +143,20 @@ def test_shape_divide_i24_22_all():
     assert np.array_equal(shape_divide(np.arange(8).reshape(2,4), [2,2], reduction='all'),
                           np.reshape([0,2,1,3,4,6,5,7], [2,1,2,2]))
 
+def test_cartesian_1():
+    assert np.array_equal(cartesian(([1, 2, 3], [4, 5], [6, 7])),
+                          np.array([[1, 4, 6],
+                                    [1, 4, 7],
+                                    [1, 5, 6],
+                                    [1, 5, 7],
+                                    [2, 4, 6],
+                                    [2, 4, 7],
+                                    [2, 5, 6],
+                                    [2, 5, 7],
+                                    [3, 4, 6],
+                                    [3, 4, 7],
+                                    [3, 5, 6],
+                                    [3, 5, 7]]))
 
 def test_interpNaNs_0nnn4_r5():
     assert np.all(interpNaNs(np.array([0,np.nan,np.nan,np.nan,4]))==lrange(5))
@@ -370,6 +384,7 @@ if __name__ == '__main__':
     test_shape_divide_i24_22_median()
     test_shape_divide_i24_22_first()
     test_shape_divide_i24_22_all()
+    test_cartesian_1()
     test_interpNaNs_0nnn4_r5()
     interpNumpy_1345_half()
     interpNumpy_11354050_half()

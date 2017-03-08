@@ -41,12 +41,12 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from builtins import map, zip
-from future.utils import lmap
+from future.utils import lmap, lzip
 
 import numpy as np
 
 from .gen_utils import islistlike
-from .list_utils import split_at_boundaries
+from .list_utils import split_at_boundaries, flatten, fL
 
 def _get_index_groups_old(arr):
     '''For a 1D array, get all unique values (keys)
@@ -457,3 +457,199 @@ def merge_recarrays(arrays):
         joint[:,offset:offset+size] = a.view(numpy.uint8).reshape(n,size)
     dtype = sum((a.dtype.descr for a in arrays), [])
     return joint.ravel().view(dtype)
+
+def get_rec_dtypes(arr):
+    '''Get the dtypes of a record array as a list
+       Basically, a workaround since arr.dtype is not an iterable (!?)
+       
+       This only gets the actual column dtypes, NOT the field names
+       (use arr.dtype.names to retrieve those)'''
+    return [arr.dtype[i] for i in range(len(arr.dtype))]
+
+def cartesian_records(arrays, out=None):
+    '''Generate a cartesian product of input record arrays,
+       combining the results into a single record array with all fields.
+       No two arrays can share the same field!
+       
+       Inputs:
+        * arrays : list of 1D array-like (to form the cartesian product of)
+        * out : (optional) array to place the cartesian product in.
+       
+       Returns out, 2-D array of shape (M, len(arrays))
+       containing cartesian products formed of input arrays.
+       
+       Example:
+       cartesian_records((np.array([1., 2., 3.], dtype=[('a', np.float)]),
+                          np.array([4, 5], dtype=[('b', np.int)]),
+                          np.array([6, 7], dtype=[('c', np.int)])))
+       
+       np.array([(1., 4, 6),
+                 (1., 4, 7),
+                 (1., 5, 6),
+                 (1., 5, 7),
+                 (2., 4, 6),
+                 (2., 4, 7),
+                 (2., 5, 6),
+                 (2., 5, 7),
+                 (3., 4, 6),
+                 (3., 4, 7),
+                 (3., 5, 6),
+                 (3., 5, 7)],
+           dtype=[('a', np.float), ('b', np.int), ('c', np.int)])
+       
+       Original code by SO user, "pv."
+       http://stackoverflow.com/questions/1208118/using-numpy-to-build-an-array-of-all-combinations-of-two-arrays
+       '''
+
+    arrays = lmap(np.asanyarray, arrays)
+    output_length = np.prod([x.size for x in arrays])
+    
+    names_list = [a.dtype.names for a in arrays]
+    arr, rest = arrays[0], arrays[1:]
+    arr_names, rest_names_list = names_list[0], names_list[1:]
+    other_names = flatten(rest_names_list)
+    
+    if out is None:
+        dtypes_list = lmap(get_rec_dtypes, arrays)
+        
+        assert all(names_list), 'All arrays must be record arrays!'
+        output_dtype = [(n, d) for names, dtypes in zip(names_list, dtypes_list)
+                               for n, d in zip(names, dtypes)]
+        msg = 'No duplicate fields can exist between input arrays!'
+        assert len(output_dtype) == len(set(flatten(names_list))), msg
+        
+        out = np.empty(output_length, dtype=output_dtype)
+
+    m = output_length // arr.size
+    for name in arr_names:
+        out[name] = np.repeat(arr[name], m)
+    
+    if rest:
+        cartesian_records(rest, out=out[:m])
+        for name in other_names:
+            for j in range(1, arr.size):
+                out[name][j * m:(j + 1) * m] = out[name][:m]
+    
+    return out
+
+def _rec_inner_join_helper(keycols, arr_list):
+    '''All the dtype-wrangling and assertions for rec_inner_join'''
+    assert len(arr_list), 'You must pass a string and one or more record arrays!'
+    assert len(set(keycols)) == len(keycols), 'keycols must not contain duplicates!'
+    #if jointype not in ['inner', 'outer', 'left']:
+    #    msg = '{} jointype is not implemented. Only inner, outer, and left join are implemented.'
+    #    raise Exception(msg.format(jointype))
+    
+    names_list = [a.dtype.names for a in arr_list]
+    dtypes_list = lmap(get_rec_dtypes, arr_list)
+    names_and_dtypes_list = [lzip(names, dtypes)
+                             for names, dtypes in zip(names_list, dtypes_list)]
+    _nd_dict = dict(zip(names_list[0], dtypes_list[0]))
+    key_dtypes = [_nd_dict[name] for name in keycols]
+    
+    non_key_names_and_dtypes = [[(name, dt) for name, dt in name_dtype_list
+                                            if name not in keycols]
+                                for name_dtype_list in names_and_dtypes_list]
+    
+    non_key_col_names = fL(non_key_names_and_dtypes)[:, :, 0]
+    non_key_dtypes = fL(non_key_names_and_dtypes)[:, :, 1]
+    output_dtype = lzip(keycols, key_dtypes) + flatten(non_key_names_and_dtypes)
+    
+    # Assertions to ensure bad things can't happen:
+    msg = 'Each input array must have all the keycols'
+    assert all([not (set(keycols) - set(arr.dtype.names)) for arr in arr_list]), msg
+    
+    msg = 'All arrays must have the same dtype for all keycols and may not share any other columns in common'
+    _all_names = flatten(names_list)
+    expected_num_cols = len(_all_names) - len(keycols) * (len(arr_list) - 1)
+    assert expected_num_cols == len(output_dtype) == len(set(_all_names)), msg
+    
+    return non_key_col_names, output_dtype
+
+def rec_inner_join(keycols, *arr_list):
+    '''Inner join for numpy.
+       A version of numpy.lib.recfunctions.join_by
+       that always specifies inner product but also allows for
+       duplicate key entries (many-to-many relationships)
+       and can join two or more arrays simultaneously
+       
+       Warning: this function is not terribly efficient, especially if
+       the amount of duplication is low.
+       Use join_by when NO duplication is present,
+       and also consider using pandas.merge
+       
+       Example:
+       rec_inner_join('s',
+           np.array([('x', 1.), ('x', 2.), ('y', 3.)], dtype=[('s', 'S20'), ('a', np.float)]),
+           np.array([('x', 4), ('y', 5), ('x', 0)], dtype=[('s', 'S20'), ('b', np.int)]),
+           np.array([(6, 'x'), (7, 'y'), (9, 'z')], dtype=[('c', np.int), ('s', 'S20')]),)
+        ->
+       np.array([('x', 1., 4, 6),
+                 ('x', 1., 0, 6),
+                 ('x', 2., 4, 6),
+                 ('x', 2., 0, 6),
+                 ('y', 3., 5, 7),
+                ], dtype=[('s', 'S20'), ('a', np.float), ('b', np.int), ('c', np.int)])
+    '''
+    keycols = keycols if islistlike(keycols) else [keycols]
+    
+    non_key_col_names, output_dtype = _rec_inner_join_helper(keycols, arr_list)
+    
+    keys_list = []
+    index_groups_dict_list = []
+    for arr in arr_list:
+        k, ig = get_index_groups(arr[keycols])
+        key = lmap(tuple, k)
+        keys_list.append(key)
+        index_groups_dict_list.append(dict(zip(key, ig)))
+    
+    # Stay with ONLY inner join for now since it simplifies the resulting
+    # calculations (aka, no missing values)
+    
+    keys_use = list(keys_list[0])
+    for keys in keys_list[1:]:
+        keys_use = [k for k in keys_use
+                      if k in set(keys)]
+    
+    # if jointype == 'left':
+    #     pass
+    # elif jointype == 'inner':
+    #     for keys in keys_list[1:]:
+    #         keys_use = [k for k in keys_use
+    #                       if k in set(keys)]
+    # elif jointype == 'outer':
+    #     keys_set = lmap(set, keys_list)
+    #     keys_use_set = set(keys_use)
+    #     for keys in keys_list[1:]:
+    #         for k in keys:
+    #             if k not in keys_use_set:
+    #                 keys_use.append(k)
+    #                 keys_use_set.add(k)
+    
+    output_lengths = [np.prod([len(d[k]) for d in index_groups_dict_list])
+                      for k in keys_use] # The length of each key group after joining
+    output_len = sum(output_lengths)
+    output_starts = np.cumsum([0] + output_lengths)
+    
+    output_arr = np.empty(output_len, dtype=output_dtype)
+    
+    # Copy of each input array where all keycols have been removed
+    filtered_arrays = [arr[fields] for arr, fields in zip(arr_list, non_key_col_names)]
+    
+    kc_inds = {k: i for i, k in enumerate(keycols)}
+    
+    for key, start, length in zip(keys_use, output_starts, output_lengths):
+        # For this key, get the associated values from each array
+        # But use the filtered arrays so that all columns are unique
+        values = [arr[d[key]] for arr, d in zip(filtered_arrays, index_groups_dict_list)]
+        
+        output_view = output_arr[start:(start + length)]
+        
+        for k in keycols:
+            output_view[k] = key[kc_inds[k]]
+        
+        # Insert the results of this portion of the join
+        # into the output array at the right location
+        cartesian_records(values, out=output_view)
+    
+    return output_arr

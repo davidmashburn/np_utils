@@ -195,6 +195,51 @@ def test_get_first_indices_1():
         intentioned_fail = True
     assert intentioned_fail
 
+def test_cartesian_records_1():
+    a = np.array([(1.,), (2.,), (3.,)], dtype=[('a', np.float)])
+    b = np.array([(4,), (5,)], dtype=[('b', np.int)])
+    c = np.array([(6,), (7,)], dtype=[('c', np.int)])
+    
+    r = cartesian_records([a, b, c])
+    expected_dtype = [('a', np.float), ('b', np.int), ('c', np.int)]
+    expected_result = np.array([(1., 4, 6),
+                                (1., 4, 7),
+                                (1., 5, 6),
+                                (1., 5, 7),
+                                (2., 4, 6),
+                                (2., 4, 7),
+                                (2., 5, 6),
+                                (2., 5, 7),
+                                (3., 4, 6),
+                                (3., 4, 7),
+                                (3., 5, 6),
+                                (3., 5, 7)
+                               ], dtype=expected_dtype)
+    assert np.array_equal(r, expected_result)
+
+def test_rec_inner_join_on_one_input():
+    a = _get_sample_rec_array()
+    r = rec_inner_join('m', a)
+    for i in 'imnop':
+        assert np.array_equal(np.sort(a[i]), np.sort(r[i]))
+
+def test_rec_inner_join_1():
+    a = np.array([('x', 1.), ('x', 2.), ('y', 3.)], dtype=[('s', 'S20'), ('a', np.float)])
+    b = np.array([('x', 4), ('y', 5), ('x', 0)], dtype=[('s', 'S20'), ('b', np.int)])
+    c = np.array([(6, 'x'), (7, 'y'), (9, 'z')], dtype=[('c', np.int), ('s', 'S20')])
+    
+    r = rec_inner_join('s', a, b, c)
+    
+    expected_dtype = [('s', 'S20'), ('a', np.float), ('b', np.int), ('c', np.int)]
+    expected_result = np.array([('x', 1., 4, 6),
+                                ('x', 1., 0, 6),
+                                ('x', 2., 4, 6),
+                                ('x', 2., 0, 6),
+                                ('y', 3., 5, 7),
+                               ], dtype=expected_dtype)
+    
+    assert np.array_equal(r, expected_result)
+
 if __name__ == '__main__':
     test_true_where_1()
     test_true_where_2()
@@ -216,4 +261,6 @@ if __name__ == '__main__':
     test_is_first_occurrence_2()
     test_is_first_occurrence_and_1d_3()
     test_get_first_indices_1()
-    
+    test_cartesian_records_1
+    test_rec_inner_join_on_one_input()
+    test_rec_inner_join_1()
