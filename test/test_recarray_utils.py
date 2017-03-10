@@ -111,29 +111,6 @@ def test_group_transform_3():
     assert not np.array_equal(normalized_o, simple_normalize(arr['o']))
     assert np.isclose(np.mean(normalized_o), 1)
 
-def test_np_and_rec_groupby_full_1():
-    arr = _get_sample_rec_array()
-    simple_rank = lambda x: np.argsort(x) + 1
-    background_subtract = lambda x: x - x.mean()
-    simple_normalize = lambda x: x / x.mean()
-    
-    n = np_groupby_full(arr[['m', 'n']], arr,
-       (lambda x: simple_rank(x['o']), np.int),
-       (lambda x: simple_rank(x[['o', 'p']]), np.int),
-       (lambda x: background_subtract(x['o']), np.float),
-       (lambda x: simple_normalize(x['p']), np.float),
-       names=['m', 'n', 'rank_o', 'rank_op', 'bg_sub_o', 'norm_p']
-    )
-    
-    r = rec_groupby_full(arr, ['m', 'n'],
-        (simple_rank,         np.int,   'o',        'rank_o'),
-        (simple_rank,         np.int,   ['o', 'p'], 'rank_op'),
-        (background_subtract, np.float, 'o',        'bg_sub_o'),
-        (simple_normalize,    np.float, 'p',        'norm_p')
-    )
-    
-    assert np.array_equal(n, r)
-
 def test_rec_groupby_1():
     a = _get_sample_rec_array()
     assert np.all(rec_groupby(a, 'n', (np.max, 'o', 'max_o')) ==
@@ -157,6 +134,40 @@ def test_rec_groupby_3():
                      names=['m', 'n', 'its_complicated'])
     
     assert np.all(g_r == g_n)
+
+def test_rec_groupby_4():
+    a = _get_sample_rec_array()
+    def compute_some_thing(x):
+        o, p = x['o'], x['p']
+        return np.mean(o) / np.std(o) * np.min(p)
+    
+    g_mn = rec_groupby(a, ['m', 'n'], (compute_some_thing, ['o', 'p'], 'its_complicated'))
+    g_nm = rec_groupby(a, ['n', 'm'], (compute_some_thing, ['o', 'p'], 'its_complicated'))
+    
+    assert not np.array_equal(g_mn, g_nm)
+
+def test_np_and_rec_groupby_full_1():
+    arr = _get_sample_rec_array()
+    simple_rank = lambda x: np.argsort(x) + 1
+    background_subtract = lambda x: x - x.mean()
+    simple_normalize = lambda x: x / x.mean()
+    
+    n = np_groupby_full(arr[['m', 'n']], arr,
+       (lambda x: simple_rank(x['o']), np.int),
+       (lambda x: simple_rank(x[['o', 'p']]), np.int),
+       (lambda x: background_subtract(x['o']), np.float),
+       (lambda x: simple_normalize(x['p']), np.float),
+       names=['m', 'n', 'rank_o', 'rank_op', 'bg_sub_o', 'norm_p']
+    )
+    
+    r = rec_groupby_full(arr, ['m', 'n'],
+        (simple_rank,         np.int,   'o',        'rank_o'),
+        (simple_rank,         np.int,   ['o', 'p'], 'rank_op'),
+        (background_subtract, np.float, 'o',        'bg_sub_o'),
+        (simple_normalize,    np.float, 'p',        'norm_p')
+    )
+    
+    assert np.array_equal(n, r)
 
 _is_first_occurrence_1_dat = [[0, 1, 0, 1, 0, 2, 3, 4],
                               [1, 1, 0, 0, 0, 1, 1, 1]]
@@ -252,10 +263,11 @@ if __name__ == '__main__':
     test_group_transform_1()
     test_group_transform_2()
     test_group_transform_3()
-    test_np_and_rec_groupby_full_1()
     test_rec_groupby_1()
     test_rec_groupby_2()
     test_rec_groupby_3()
+    test_rec_groupby_4()
+    test_np_and_rec_groupby_full_1()
     test_is_first_occurrence_1()
     test_is_first_occurrence_1d_1()
     test_is_first_occurrence_2()

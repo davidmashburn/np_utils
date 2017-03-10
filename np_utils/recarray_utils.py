@@ -300,11 +300,17 @@ def np_groupby_full(keyarr, arr, *functions_result_dtypes, **kwds):
                for fun, result_dtype in functions_result_dtypes]
     return np.rec.fromarrays(_split_records(arr) + results, names=names)
 
-def fields_view(arr, fields):
+def fields_view(arr, fields, force_ordering=False):
     '''Select fields from a record array without a copy
        Taken from:
        http://stackoverflow.com/questions/15182381/how-to-return-a-view-of-several-columns-in-numpy-structured-array
        '''
+    if force_ordering:
+        ordered_fields = [n for n in arr.dtype.names
+                            if n in fields]
+        if not list(fields) == ordered_fields:
+            return arr[fields]
+    
     fields = fields if islistlike(fields) else [fields]
     newdtype = np.dtype({name: arr.dtype.fields[name] for name in fields})
     return np.ndarray(arr.shape, newdtype, arr, 0, arr.strides)
@@ -337,7 +343,7 @@ def rec_groupby(a, keynames, *fun_fields_name):
        as fast as pandas and probably misses some corner cases for each :)
        '''
     keynames = list(keynames) if islistlike(keynames) else [keynames]
-    keyarr = fields_view(a, keynames)
+    keyarr = fields_view(a, keynames, force_ordering=True)
     functions = [_outfielder(fun, fields)
                  for fun, fields, name in fun_fields_name]
     names = [i[-1] for i in fun_fields_name]
