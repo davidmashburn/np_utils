@@ -169,6 +169,23 @@ def test_np_and_rec_groupby_full_1():
     
     assert np.array_equal(n, r)
 
+def test_rec_groupby_full_2():
+    arr = _get_sample_rec_array()
+    simple_rank = lambda x: np.argsort(x) + 1
+    background_subtract = lambda x: x - x.mean()
+    simple_normalize = lambda x: x / x.mean()
+    
+    r = rec_groupby_full(arr, ['m', 'n'],
+        #(simple_rank,         np.int,   'o',        'rank_o'),
+        #(simple_rank,         np.int,   ['o', 'p'], 'rank_op'),
+        (background_subtract, np.float, 'o',        'bg_sub_o'),
+        (simple_normalize,    np.float, 'p',        'norm_p')
+    )
+    assert(np.isclose(r['bg_sub_o'].mean(), 0))
+    assert(np.isclose(r['norm_p'].mean(), 1))
+    assert(not np.array_equal(r['bg_sub_o'], background_subtract(arr['o'])))
+    assert(not np.array_equal(r['norm_p'], simple_normalize(arr['p'])))
+
 _is_first_occurrence_1_dat = [[0, 1, 0, 1, 0, 2, 3, 4],
                               [1, 1, 0, 0, 0, 1, 1, 1]]
 
@@ -268,6 +285,7 @@ if __name__ == '__main__':
     test_rec_groupby_3()
     test_rec_groupby_4()
     test_np_and_rec_groupby_full_1()
+    test_rec_groupby_full_2()
     test_is_first_occurrence_1()
     test_is_first_occurrence_1d_1()
     test_is_first_occurrence_2()

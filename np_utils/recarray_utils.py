@@ -244,11 +244,12 @@ def np_groupby(keyarr, arr, *functions, **kwds):
     return np.rec.fromarrays(_split_records(keys) + groups, names=names)
 
 def _group_transform(arr, index_groups, fun, result_dtype):
-    '''Helper function for group_transform'''
+    '''Helper function for group_transform
+       Apply fun to each subgroup in arr, using index_groups
+       Return the results in place in a new array'''
     result = np.empty(len(arr), dtype=result_dtype)
     for g in index_groups:
         result[g] = fun(arr[g])
-    
     return result
 
 def group_transform(keyarr, arr, fun, result_dtype):
@@ -298,7 +299,7 @@ def np_groupby_full(keyarr, arr, *functions_result_dtypes, **kwds):
     keys, index_groups = get_index_groups(keyarr)
     results = [_group_transform(arr, index_groups, fun, result_dtype)
                for fun, result_dtype in functions_result_dtypes]
-    return np.rec.fromarrays(_split_records(arr) + results, names=names)
+    return np.rec.fromarrays(_split_records(keyarr) + results, names=names)
 
 def fields_view(arr, fields, force_ordering=False):
     '''Select fields from a record array without a copy
@@ -373,7 +374,7 @@ def rec_groupby_full(a, keynames, *fun_dtype_fields_name):
        as fast as pandas and probably misses some corner cases for each :)
        '''
     keynames = list(keynames) if islistlike(keynames) else [keynames]
-    keyarr = fields_view(a, keynames)
+    keyarr = fields_view(a, keynames, force_ordering=True)
     functions_result_dtypes = [(_outfielder(fun, fields), dtype)
                                for fun, dtype, fields, name in fun_dtype_fields_name]
     names = [i[-1] for i in fun_dtype_fields_name]
