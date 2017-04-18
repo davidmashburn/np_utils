@@ -1,5 +1,6 @@
 """Basic utilities to support conversion between array.array <-> numpy.array
 """
+from __future__ import print_function
 
 import array
 
@@ -14,7 +15,7 @@ def to_pyarray(arr):
     try:
         return array.array(_TYPECODE_DICT[arr.dtype], arr.ravel())
     except KeyError:
-        print 'Array type of {} is not supported by to_pyarray'.format(arr.dtype)
+        print('Array type of {} is not supported by to_pyarray'.format(arr.dtype))
         raise
 
 def from_pyarray(arr):
