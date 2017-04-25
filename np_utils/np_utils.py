@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''Utilities for array and list manipulation by David Mashburn.
 Notable functions by category:
-    
+
 Simple utilities and array generators
 -------------------------------------
 multidot ->
@@ -107,7 +107,7 @@ def linrange(start, step, length):
     '''Includes "length" points, including "start", each separated by "step".
        (a hybrid between linspace and arange)'''
     return start + np.arange(length) * step
-    
+
 #def linrange_OLD(start, step, length):
 #    return np.arange(start, start + step * (length - 0.5), step) # More efficient, but more complicated too
 
@@ -186,16 +186,16 @@ def shapeShift(arr,newShape,offset=None,fillValue=0):
        and paste another array into it with an optional offset.
        In 2D image processing, this like changing the canvas size and
        then moving the image in x and y.
-       
+
        In the simple case of expanding the shape of an array, this is
        equivalent to the following standard procedure:
          newArray = zeros(shape)
          newArray[:arr.shape[0],:arr.shape[1],...] = arr
-       
+
        However, shapeShift is more flexible because it can safely
        clip for any shape and any offset (but using it just for cropping
        an array is more efficiently done with slicing).
-       
+
        A more accurate name for this might be "copyDataToArrayOfNewSize", but
        "shapeShift" is much easier to remember (and cooler).
        '''
@@ -203,9 +203,9 @@ def shapeShift(arr,newShape,offset=None,fillValue=0):
     newArr = np.zeros(newShape,dtype=oldArr.dtype)+fillValue
     oldShape,newShape = np.array(oldArr.shape), np.array(newArr.shape)
     offset = ( 0*oldShape if offset==None else np.array(offset) )
-    
+
     assert len(oldShape)==len(newShape)==len(offset)
-    
+
     oldStartEnd = np.transpose([ np.clip(i-offset,0,oldShape) for i in [0,newShape] ])
     newStartEnd = np.transpose([ np.clip(i+offset,0,newShape) for i in [0,oldShape] ])
     oldSlice = [ slice(start,end) for start,end in oldStartEnd ]
@@ -218,7 +218,7 @@ def addBorder(arr,borderValue=0,borderThickness=1,axis=None):
        value around the entire original array; optional thickness (default 1)'''
     # a slice of None or a single int index; handles negative index cases
     allOrOne = ( slice(None) if axis==None else
-               ( axis        if axis>=0 else 
+               ( axis        if axis>=0 else
                  arr.ndim+axis ))
     # list of border thickness around each dimension (as an array)
     tArr = np.zeros(arr.ndim)
@@ -268,7 +268,7 @@ def shape_multiply_zero_fill(arr, scale):
         middle_slice = flatten([slice(None), i//2] for i in sc)
         t[middle_slice] = a
         return t
-    
+
     return shape_multiply(arr, scale, oddOnly=True, adjustFunction=zeroFill)
 
 def shape_divide(arr, scale, reduction='mean'):
@@ -352,13 +352,13 @@ def cartesian(arrays, out=None):
        Inputs:
         * arrays : list of 1D array-like (to form the cartesian product of)
         * out : (optional) array to place the cartesian product in.
-       
+
        Returns out, 2-D array of shape (M, len(arrays))
        containing cartesian products formed of input arrays.
-       
+
        Example:
        cartesian(([1, 2, 3], [4, 5], [6, 7]))
-       
+
        array([[1, 4, 6],
               [1, 4, 7],
               [1, 5, 6],
@@ -371,7 +371,7 @@ def cartesian(arrays, out=None):
               [3, 4, 7],
               [3, 5, 6],
               [3, 5, 7]])
-       
+
        Original code by SO user, "pv."
        http://stackoverflow.com/questions/1208118/using-numpy-to-build-an-array-of-all-combinations-of-two-arrays
        '''
@@ -384,7 +384,7 @@ def cartesian(arrays, out=None):
         out = np.empty([n, len(arrays)], dtype=dtype)
 
     arr, rest = arrays[0], arrays[1:]
-    
+
     m = n // arr.size
     out[:, 0] = np.repeat(arr, m)
     if rest:
@@ -444,12 +444,12 @@ def polyArea(points):
     # Then compute the area as half the abs value of the sum of the cross product
     xPairs,yPairs = np.transpose([points,np.roll(points,-1,axis=0)])
     return 0.5 * np.abs(np.sum(np.cross(xPairs,yPairs)))
-    
+
     # Old version
     #x0,y0 = np.array(points).T # force to numpy array and transpose
     #x1,y1 = np.roll(points,-1,axis=0).T
     #return 0.5*np.abs(np.sum( x0*y1 - x1*y0 ))
-    
+
     # Non-numpy version:
     #return 0.5*abs(sum( x0*y1 - x1*y0
     #                   for ((x0, y0), (x1, y1)) in zip(points, roll(points)) ))
@@ -469,7 +469,7 @@ def polyCentroid(points):
     xySum = np.sum(xyPairs,axis=2) # (x0+x1),(y0+y1)
     xc,yc = np.sum( xySum*c, axis=1 )/(3.*np.sum(c))
     return xc,yc
-    
+
     # Old version
     #x0,y0 = np.array(points).T # force to numpy array and transpose
     #x1,y1 = np.roll(x0,-1), np.roll(y0,-1)     # roll to get the following values
@@ -477,14 +477,14 @@ def polyCentroid(points):
     #area6 = 3.*np.sum(c)                       # 6*area
     #x,y = np.sum((x0+x1)*c), np.sum((y0+y1)*c) # compute the main centroid calculation
     #return x/area6, y/area6
-    
+
     # Non-numpy version:
     #x = sum( (x0+x1)*(x0*y1-x1*y0)
     #        for ((x0, y0), (x1, y1)) in zip(points, roll(points)) )
     #y = sum( (y0+y1)*(y0*x1-y1*x0)
     #        for ((x0, y0), (x1, y1)) in zip(points, roll(points)) )
     #return x/area6,y/area6
-    
+
     # Single function version:
     #def _centrX(points):
     #    '''Compute the x-coordinate of the centroid
@@ -533,7 +533,7 @@ def interpolatePlane(arr,floatIndex,axis=0):
     assert axis<len(arr.shape),'Not enough dimensions in the array'
     maxInd = arr.shape[axis]
     assert 0<=floatIndex<=maxInd-1,'floatIndex ('+str(floatIndex)+') is out of bounds '+str([0,maxInd-1])+'!'
-    
+
     slicer = ( slice(None), )*axis
     ind = int(floatIndex)
     rem = floatIndex-ind
@@ -547,7 +547,7 @@ def interpolateSumBelowAbove(arr,floatIndex,axis=0):
     assert axis<len(arr.shape),'Not enough dimensions in the array'
     maxInd = arr.shape[axis]
     assert 0<=floatIndex<=maxInd,'floatIndex ('+str(floatIndex)+') is out of bounds ('+str([0,maxInd])+')!'
-    
+
     slicer = ( slice(None), )*axis
     ind = int(floatIndex)
     rem = floatIndex-ind
@@ -606,7 +606,7 @@ def FindOptimalScaleAndTranslationBetweenPointsAndReference(points,pointsRef):
        and
        (a*x[i]+x0,a*y[i]+y0,...)
        using linear least squares
-       
+
        return the transformation parameters: a,(x0,y0,...)'''
     # Force to array of floats:
     points = np.asarray(points,dtype=np.float)
@@ -618,13 +618,13 @@ def FindOptimalScaleAndTranslationBetweenPointsAndReference(points,pointsRef):
     prefm  = pointsRef.mean(axis=0)
     p2m    = np.square(points).mean(axis=0)
     pTpref = (points * pointsRef).mean(axis=0)
-    
+
     a = ((   (pm*prefm).sum() - pTpref.sum()   ) /
          #   -------------------------------     # fake fraction bar...
          (        pm2.sum() - p2m.sum()        ))
     p0 = prefm - a*pm
     return a,p0
-    
+
     # More traditional version (2 dimensions only):
     # xm,ym = pm
     # xrefm,yrefm = prefm
@@ -641,7 +641,7 @@ def concatenate_broadcasting(*arrs, **kwds):
     '''Broadcasting (i.e. forgiving) version of concatenate
     axis is passed to concatenate (default 0)
     other kwds are passed to broadcast_arrays (subok in new version of numpy)
-    
+
     Docs for concatenate:
     '''
     axis = kwds.pop('axis', 0)
@@ -677,7 +677,7 @@ def box(arr, depth=0):
     '''Make nested array of arrays from an existing array
        depth specifies the point at which to split the outer array from the inner
        depth=0 denotes that the entire array should be boxed
-       depth=-1 denotes that all leaf elements 
+       depth=-1 denotes that all leaf elements
        box always adds an outer singleton dimension to ensure that arr values with shape[0]==1 are handled properly
        '''
     box_shape, inner_shape = split_at(np.shape(arr), depth)
@@ -724,7 +724,7 @@ def map_along_axis(f, arr, axis):
        apply_along_axis applies the function to the 1D arrays which are associated with that axis
        map_along_axis transposes the original array so that that dimension is first
        and then applies the function to each entire (N-1)D array
-       
+
        Example:
        >>> arr = np.arange(8).reshape([2,2,2])
        >>> arr
@@ -754,21 +754,21 @@ def apply_at_depth_ravel(f, arr, depth=0):
     return f(ravel_at_depth(arr, depth=depth), axis=-1)
 
 def apply_at_depth(f, *args, **kwds):
-    '''Takes a function and its arguments (assumed to 
-       all be arrays) and applies boxing to the arguments so that various re-broadcasting can occur 
+    '''Takes a function and its arguments (assumed to
+       all be arrays) and applies boxing to the arguments so that various re-broadcasting can occur
        Somewhat similar to vectorize and J's rank conjunction (")
-       
+
        f: a function that acts on arrays and returns an array
        args: the arguments to f (all arrays)
              depending on depths, various subarrays from these are what actually get passed to f
        kwds:
        depths (or depth): an integer or list of integers with the same length as args (default 0)
        broadcast_results: a boolean that determines if broadcasting should be applied to the results (default False)
-       
+
        Returns: a new array based on f mapped over various subarrays of args
-       
+
        Examples:
-       
+
        One way to think about apply_at_depth is as replacing this kind of construct:
        a, b = args
        l = []
@@ -778,19 +778,19 @@ def apply_at_depth(f, *args, **kwds):
                ll.append(f(a[i, j], b[j]))
            l.append(ll)
        result = np.array(l)
-       
+
        This would simplify to:
-       
+
        apply_at_depth(f, a, b, depths=[2, 1])
-       
+
        except that apply_at_depth handles all sorts of
        other types of broadcasting for you.
-       
+
        Something like this could be especially useful if the
        "f" in question depends on its arguments having certain
        shapes but you have data structures with those as subsets.
-       
-       
+
+
        The algorithm itself is as follows:
         * box each arg at the specified depth (box_list)
           See docs for "box" for more details
@@ -807,14 +807,14 @@ def apply_at_depth(f, *args, **kwds):
           or just map(f, *bbl_flat)
           Again, arg0[i] will still be an array that can have arbitrary shape
           and will be some subarray of args[0] (ex: args[0][2,1])
-        * Optionally broadcast the results (otherwise 
-          force all outpus to have the same shape) and 
+        * Optionally broadcast the results (otherwise
+          force all outpus to have the same shape) and
           construct a single array from all the outputs
         * Reshape the result to account for the flattening that
           happened to the broadcasted boxes
           This is the same way that unboxing works.
         * Celebrate avoiding unnecessarily complex loops :)
-       
+
        This function is as efficient as it can be considering the generality;
        if f is reasonably slow and the arrays inside the boxes are
        fairly large it should be fine.

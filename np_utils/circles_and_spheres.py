@@ -8,4 +8,3 @@ from .array_drawing import ImageCircle,ImageSphere
 
 circs = [None]+[ImageCircle(i) for i in range(1,100)]
 shprs = [None]+[ImageSphere(i) for i in range(1,20)]
-

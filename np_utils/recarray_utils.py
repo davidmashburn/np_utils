@@ -72,15 +72,15 @@ def _index_helper(arr, sort_arr):
        Inputs
        arr:      Any flat array
        sort_arr: Sorted version of arr
-       
+
        Returns
        isdiff:       Boolean array with same length as arr
                      True if each element is different from its lefthand
                      False if it is the same
                      (called "flag" in np.unique)
-       
+
        keys:         Unique values of arr (sorted)
-       
+
        split_points: Locations where the isdiff is True
                      (or where the sorted array has change points)
                      This is what makes it possible to determine the
@@ -106,7 +106,7 @@ def get_index_groups(arr):
        keys and index_groups are aligned so that dict(zip(keys, index_groups))
        creates a dictionary that maps from each unique value in arr
        to a list of all the locations for that value.
-       
+
        "index_groups" can be thought of as a much more efficient variant of:
            [np.where(arr==i) for i in np.unique(arr)]
        Example: a group by "count" can be achieved by:
@@ -114,15 +114,15 @@ def get_index_groups(arr):
            counts = map(len, index_groups)
        which would be equivalent to this pseudo-sql:
            select count(x) from arr group by x
-       
+
        The algorithm can be summarized as follows:
        * Form a list of unique values (keys)
-       
+
        * Find the locations where the sorted array changes values (split_points)
-       
+
        * Replace every value in arr with an index into the unique keys (inv)
          - keys and inv are calculated in the exact same way as in np.unique
-       
+
        * Argsort "inv" to cluster the indices of arr into groups and
          split these groups at the split points
          These indices will then be indices for the original values as well since
@@ -132,29 +132,29 @@ def get_index_groups(arr):
              is that we can reuse "flag" (isdiff here) to calculate the
              split_points directly and avoid calling np.bincount and
              then np.cumsum on inv
-       
+
        Internal variable details:
        sort_ind:        Argsort of arr -- indices of the array rearranged such
                                           that arr[sort_ind] == np.sort(arr)
-       
+
        sort_arr:        Sorted version of arr
-       
+
        sorted_key_inds: A list the unique value's indices in keys (so just 0-n)
                         repeated the number of times if occurs in the array
-       
+
        inv:             The inverse mapping from unique to arr, an array
                         of the indices of keys such that keys[inv] == arr
                         (same as the optional return value from np.unique)
-                        
+
                         Note that np.argsort(inv) gives the indices of arr
                         sorted into groups based on keys; a 1d array where
                         indices in the same group are "clustered" contiguously
-       
+
        index_groups:    The indices of arr grouped into list of arrays
                         where each group (array) matches a specific key
                         This property will then be true:
                         np.all(arr[index_groups[i]] == keys[i])
-       
+
     '''
     arr = np.ravel(arr)
     sort_ind = np.argsort(arr) #,kind='mergesort')
@@ -195,9 +195,9 @@ def np_groupby(keyarr, arr, *functions, **kwds):
          functions: functions that computes the metrics
          names (optional): names for each column in the resulting record array
        This applies f to groups of values from arr where values in keyarr are the same
-       
+
        Returns a 2-column array dictionary with keys taken from the keyfun(a)
-       
+
        Example use case for a record array with columns 'i' and 'j':
            np_groupby(a['i'], a['j'], np.max)
        In psqudo-sql, this would be:
@@ -212,18 +212,18 @@ def np_groupby(keyarr, arr, *functions, **kwds):
                      names=['m', 'n', 'mean_o', 'std_o', 'min_p'])
        In psqudo-sql, this would be:
            select m,n,mean(o),std(o),min(p) from a groupby m,n
-       
+
        We could also easily use a compound function like this:
            def compute_some_thing(x):
                o, p = x['o'], x['p']
                return np.mean(o) / np.std(o) * np.min(p)
            np_groupby(a[['m', 'n']], a, compute_some_thing,
                      names=['m', 'n', 'its_complicated'])
-       
+
        There are more memory and time efficient ways to do this in special
        cases, but this is flexible for any functions and gets the job done
        (in 4 lines).
-       
+
        Other great options for groupby include:
            pandas
            numpy_groupies
@@ -231,7 +231,7 @@ def np_groupby(keyarr, arr, *functions, **kwds):
            itertools.groupby
            groupByFunction in the list_utils sub-package here
            np_unique + np.bincount (handle with care)
-       
+
        Adapted from multiple places, most notably:
        http://stackoverflow.com/questions/16856470/is-there-a-matlab-accumarray-equivalent-in-numpy
        http://stackoverflow.com/questions/8623047/group-by-max-or-min-in-a-numpy-array
@@ -256,21 +256,21 @@ def group_transform(keyarr, arr, fun, result_dtype):
     '''Perform a non-reducing operation that acts on groups
        This results in a new array the same length as the original
        (rank, normalize, sort, etc.)
-       
+
        Examples:
        (assuming arr has fields 'm', 'n', 'o', 'p')
-       
+
        # Sort items based on 'o' in groups based on 'm':
        sorted_o = group_transform(arr['m'], arr['o'], np.sort, np.float)
-       
+
        # Rank items based on 'o' and 'p' in groups based on 'm':
        simple_rank = lambda x: np.argsort(x) + 1
        ranked_op = group_transform(arr['m'], arr[['o', 'p']], simple_rank, np.int)
-       
+
        # Subtract the group mean (background) for 'p' in groups based on 'm':
        background_subtract = lambda x: x - x.mean()
        bg_removed_p = group_transform(arr['m'], arr['p'], background_subtract, np.float)
-       
+
        # Normalize groups (divide by mean) for 'o' in groups based on 'm' and 'n':
        simple_normalize = lambda x: x / x.mean()
        normalized_o = group_transform(arr[['m', 'n']], arr['o'], simple_normalize, np.float)
@@ -281,13 +281,13 @@ def group_transform(keyarr, arr, fun, result_dtype):
 def np_groupby_full(keyarr, arr, *functions_result_dtypes, **kwds):
     '''Special case of np_groupby where the end result is an array the
        same length as the original (rank, normalize, etc.)
-       
+
        Example:
-       
+
        simple_rank = lambda x: np.argsort(x) + 1
        background_subtract = lambda x: x - x.mean()
        simple_normalize = lambda x: x / x.mean()
-   
+
        result = np_groupby_full(arr[['m', 'n']], arr,
            (lambda x: simple_rank(x['o']), np.int),
            (lambda x: simple_rank(x[['o', 'p']]), np.int),
@@ -311,7 +311,7 @@ def fields_view(arr, fields, force_ordering=False):
                             if n in fields]
         if not list(fields) == ordered_fields:
             return arr[fields]
-    
+
     fields = fields if islistlike(fields) else [fields]
     newdtype = np.dtype({name: arr.dtype.fields[name] for name in fields})
     return np.ndarray(arr.shape, newdtype, arr, 0, arr.strides)
@@ -325,11 +325,11 @@ def _outfielder(fun, fields):
 def rec_groupby(a, keynames, *fun_fields_name):
     '''A special version of np_groupby for record arrays, somewhat similar
        to the function found in matplotlib.mlab.rec_groupby.
-       
+
        This is basically a wrapper around np_groupy that automatically
        generates lambda's like the ones in the np_groupby doc string.
        That same call would look like this using rec_grouby:
-       
+
        rec_groupby(a, ['m', 'n'], (np.mean, 'o', 'mean_o'),
                                   (np.std, 'o', 'std_o'),
                                   (np.min, 'p', 'min_p'))
@@ -339,7 +339,7 @@ def rec_groupby(a, keynames, *fun_fields_name):
                return np.mean(o) / np.std(o) * np.min(p)
            rec_groupby(a, ['m', 'n'],
                        (compute_some_thing, ['o', 'p'], 'its_complicated'))
-       
+
        In general, this function is faster than matplotlib.mlab, but not
        as fast as pandas and probably misses some corner cases for each :)
        '''
@@ -353,23 +353,23 @@ def rec_groupby(a, keynames, *fun_fields_name):
 def rec_groupby_full(a, keynames, *fun_dtype_fields_name):
     '''A special version of np_groupby for record arrays, somewhat similar
        to the function found in matplotlib.mlab.rec_groupby.
-       
+
        This is basically a wrapper around np_groupy_full that automatically
        generates lambda's like the ones in the np_groupby_full doc string.
        That same call would look like this using rec_grouby_full:
-       
+
        simple_rank = lambda x: np.argsort(x) + 1
        background_subtract = lambda x: x - x.mean()
        simple_normalize = lambda x: x / x.mean()
-       
+
        rec_groupby_full(a, ['m', 'n'],
            (simple_rank,         np.int,   'o',        'rank_o'),
            (simple_rank,         np.int,   ['o', 'p'], 'rank_op'),
            (background_subtract, np.float, 'o',        'bg_sub_o'),
            (simple_normalize,    np.float, 'p',        'norm_p')
        )
-       
-       
+
+
        In general, this function is faster than matplotlib.mlab, but not
        as fast as pandas and probably misses some corner cases for each :)
        '''
@@ -422,7 +422,7 @@ def is_first_occurrence_1d(arr):
 def get_first_indices(arr, values, missing=None):
     '''Get the index of the first occurrence of the list of values in
        the (flattened) array
-       
+
        The missing argument determines how missing values are handled:
        None: ignore them, leave them None
        -1: make them all -1
@@ -431,10 +431,10 @@ def get_first_indices(arr, values, missing=None):
     bad_str = """Bad value for "missing", choose one of: None, -1, 'len', 'fail'"""
     assert missing in [None, -1, 'len', 'fail'], bad_str
     arr = np.asanyarray(arr)
-    
+
     first_inds = dict(zip(*find_first_occurrence_1d(arr)))
     inds = lmap(first_inds.get, values)
-    
+
     if missing == 'fail' and None in inds:
         raise Exception('Value Error! One of the values is not in arr')
     elif missing == 'len':
@@ -443,17 +443,17 @@ def get_first_indices(arr, values, missing=None):
         default = -1
     else:
         default = None
-    
+
     if default is not None:
         inds = [default if i is None else i for i in inds]
-    
+
     return np.array(inds)
 
 def merge_recarrays(arrays):
     '''Fast version of join for structured arrays
        from http://stackoverflow.com/questions/5355744/numpy-joining-structured-arrays
        (Similar to numpy.lib.recfunctions.merge_array)
-       
+
        <CURRENTLY UNTESTED HERE>
     '''
     sizes = numpy.array([a.itemsize for a in arrays])
@@ -468,7 +468,7 @@ def merge_recarrays(arrays):
 def get_rec_dtypes(arr):
     '''Get the dtypes of a record array as a list
        Basically, a workaround since arr.dtype is not an iterable (!?)
-       
+
        This only gets the actual column dtypes, NOT the field names
        (use arr.dtype.names to retrieve those)'''
     return [arr.dtype[i] for i in range(len(arr.dtype))]
@@ -477,19 +477,19 @@ def cartesian_records(arrays, out=None):
     '''Generate a cartesian product of input record arrays,
        combining the results into a single record array with all fields.
        No two arrays can share the same field!
-       
+
        Inputs:
         * arrays : list of 1D array-like (to form the cartesian product of)
         * out : (optional) array to place the cartesian product in.
-       
+
        Returns out, 2-D array of shape (M, len(arrays))
        containing cartesian products formed of input arrays.
-       
+
        Example:
        cartesian_records((np.array([1., 2., 3.], dtype=[('a', np.float)]),
                           np.array([4, 5], dtype=[('b', np.int)]),
                           np.array([6, 7], dtype=[('c', np.int)])))
-       
+
        np.array([(1., 4, 6),
                  (1., 4, 7),
                  (1., 5, 6),
@@ -503,40 +503,40 @@ def cartesian_records(arrays, out=None):
                  (3., 5, 6),
                  (3., 5, 7)],
            dtype=[('a', np.float), ('b', np.int), ('c', np.int)])
-       
+
        Original code by SO user, "pv."
        http://stackoverflow.com/questions/1208118/using-numpy-to-build-an-array-of-all-combinations-of-two-arrays
        '''
 
     arrays = lmap(np.asanyarray, arrays)
     output_length = np.prod([x.size for x in arrays])
-    
+
     names_list = [a.dtype.names for a in arrays]
     arr, rest = arrays[0], arrays[1:]
     arr_names, rest_names_list = names_list[0], names_list[1:]
     other_names = flatten(rest_names_list)
-    
+
     if out is None:
         dtypes_list = lmap(get_rec_dtypes, arrays)
-        
+
         assert all(names_list), 'All arrays must be record arrays!'
         output_dtype = [(n, d) for names, dtypes in zip(names_list, dtypes_list)
                                for n, d in zip(names, dtypes)]
         msg = 'No duplicate fields can exist between input arrays!'
         assert len(output_dtype) == len(set(flatten(names_list))), msg
-        
+
         out = np.empty(output_length, dtype=output_dtype)
 
     m = output_length // arr.size
     for name in arr_names:
         out[name] = np.repeat(arr[name], m)
-    
+
     if rest:
         cartesian_records(rest, out=out[:m])
         for name in other_names:
             for j in range(1, arr.size):
                 out[name][j * m:(j + 1) * m] = out[name][:m]
-    
+
     return out
 
 def _rec_inner_join_helper(keycols, arr_list):
@@ -546,31 +546,31 @@ def _rec_inner_join_helper(keycols, arr_list):
     #if jointype not in ['inner', 'outer', 'left']:
     #    msg = '{} jointype is not implemented. Only inner, outer, and left join are implemented.'
     #    raise Exception(msg.format(jointype))
-    
+
     names_list = [a.dtype.names for a in arr_list]
     dtypes_list = lmap(get_rec_dtypes, arr_list)
     names_and_dtypes_list = [lzip(names, dtypes)
                              for names, dtypes in zip(names_list, dtypes_list)]
     _nd_dict = dict(zip(names_list[0], dtypes_list[0]))
     key_dtypes = [_nd_dict[name] for name in keycols]
-    
+
     non_key_names_and_dtypes = [[(name, dt) for name, dt in name_dtype_list
                                             if name not in keycols]
                                 for name_dtype_list in names_and_dtypes_list]
-    
+
     non_key_col_names = fL(non_key_names_and_dtypes)[:, :, 0]
     non_key_dtypes = fL(non_key_names_and_dtypes)[:, :, 1]
     output_dtype = lzip(keycols, key_dtypes) + flatten(non_key_names_and_dtypes)
-    
+
     # Assertions to ensure bad things can't happen:
     msg = 'Each input array must have all the keycols'
     assert all([not (set(keycols) - set(arr.dtype.names)) for arr in arr_list]), msg
-    
+
     msg = 'All arrays must have the same dtype for all keycols and may not share any other columns in common'
     _all_names = flatten(names_list)
     expected_num_cols = len(_all_names) - len(keycols) * (len(arr_list) - 1)
     assert expected_num_cols == len(output_dtype) == len(set(_all_names)), msg
-    
+
     return non_key_col_names, output_dtype
 
 def rec_inner_join(keycols, *arr_list):
@@ -579,12 +579,12 @@ def rec_inner_join(keycols, *arr_list):
        that always specifies inner product but also allows for
        duplicate key entries (many-to-many relationships)
        and can join two or more arrays simultaneously
-       
+
        Warning: this function is not terribly efficient, especially if
        the amount of duplication is low.
        Use join_by when NO duplication is present,
        and also consider using pandas.merge
-       
+
        Example:
        rec_inner_join('s',
            np.array([('x', 1.), ('x', 2.), ('y', 3.)], dtype=[('s', 'S20'), ('a', np.float)]),
@@ -599,9 +599,9 @@ def rec_inner_join(keycols, *arr_list):
                 ], dtype=[('s', 'S20'), ('a', np.float), ('b', np.int), ('c', np.int)])
     '''
     keycols = keycols if islistlike(keycols) else [keycols]
-    
+
     non_key_col_names, output_dtype = _rec_inner_join_helper(keycols, arr_list)
-    
+
     keys_list = []
     index_groups_dict_list = []
     for arr in arr_list:
@@ -609,15 +609,15 @@ def rec_inner_join(keycols, *arr_list):
         key = lmap(tuple, k)
         keys_list.append(key)
         index_groups_dict_list.append(dict(zip(key, ig)))
-    
+
     # Stay with ONLY inner join for now since it simplifies the resulting
     # calculations (aka, no missing values)
-    
+
     keys_use = list(keys_list[0])
     for keys in keys_list[1:]:
         keys_use = [k for k in keys_use
                       if k in set(keys)]
-    
+
     # if jointype == 'left':
     #     pass
     # elif jointype == 'inner':
@@ -632,31 +632,31 @@ def rec_inner_join(keycols, *arr_list):
     #             if k not in keys_use_set:
     #                 keys_use.append(k)
     #                 keys_use_set.add(k)
-    
+
     output_lengths = [np.prod([len(d[k]) for d in index_groups_dict_list])
                       for k in keys_use] # The length of each key group after joining
     output_len = sum(output_lengths)
     output_starts = np.cumsum([0] + output_lengths)
-    
+
     output_arr = np.empty(output_len, dtype=output_dtype)
-    
+
     # Copy of each input array where all keycols have been removed
     filtered_arrays = [arr[fields] for arr, fields in zip(arr_list, non_key_col_names)]
-    
+
     kc_inds = {k: i for i, k in enumerate(keycols)}
-    
+
     for key, start, length in zip(keys_use, output_starts, output_lengths):
         # For this key, get the associated values from each array
         # But use the filtered arrays so that all columns are unique
         values = [arr[d[key]] for arr, d in zip(filtered_arrays, index_groups_dict_list)]
-        
+
         output_view = output_arr[start:(start + length)]
-        
+
         for k in keycols:
             output_view[k] = key[kc_inds[k]]
-        
+
         # Insert the results of this portion of the join
         # into the output array at the right location
         cartesian_records(values, out=output_view)
-    
+
     return output_arr

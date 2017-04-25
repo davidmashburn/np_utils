@@ -43,8 +43,8 @@ def rolling_fft(a, chunk_size=10000, smoothing_factor=None):
     return np.absolute(_fft(a, chunk_size))
 
 def entropy(arr, axis=None, handle_non_integers=True):
-    """Computes the Shannon entropy of the elements of A. Assumes A is 
-    an array-like of nonnegative ints whose max value is approximately 
+    """Computes the Shannon entropy of the elements of A. Assumes A is
+    an array-like of nonnegative ints whose max value is approximately
     the number of unique values present.
 
     >>> a = [0, 1]
@@ -65,27 +65,27 @@ def entropy(arr, axis=None, handle_non_integers=True):
     0.0
     >>> entropy([5])
     0.0
-    
+
     Use the option "handle_non_integers" in the case that array values
     are non-integer (such as strings) or when integers are very large
     and vary widely.
-    
+
     Modified version of this StackOverflow post, answer by "Dave":
     http://stackoverflow.com/questions/15450192/fastest-way-to-compute-entropy-in-python"""
     if arr is None or len(arr) < 2:
         return 0.
 
     arr = np.asanyarray(arr)
-    
+
     if axis is None:
         arr = arr.flatten()
         if handle_non_integers:
             # Replace values in arr with compacted integers:
             _, arr = np.unique(arr, return_inverse=True)
-        
+
         _counts = np.bincount(arr) # needs small, non-negative ints
         counts = _counts[_counts > 0]
-        
+
         if len(counts) == 1:
             return 0. # avoid returning -0.0 to prevent weird doctests
         probs = counts / float(arr.size)

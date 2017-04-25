@@ -11,7 +11,7 @@ def gaussian_pdf(x, mu=0, sig=1, use_coeff=True):
 def uniformSphericalNoise(*shape):
     '''Creates a uniform distributions within the volume of a hyper-sphere.
        (Implementats the Box-Mueller algorithm)
-       
+
        The last element of shape is the number of dimensions of the hyper sphere'''
     randDir = np.random.randn(*shape).T
     normNoise = (randDir/np.sqrt(np.sum(randDir**2,axis=0))).T
@@ -53,7 +53,7 @@ def sample_from_buckets(buckets, weights, num=1):
 def Bhattacharyya_coefficient(mu1, sig1, mu2, sig2):
     '''Compute the Bhattacharyya coefficient between two normal distributions
     See https://en.m.wikipedia.org/wiki/Hellinger_distance
-    
+
     <math>\scriptstyle P\,\sim\,\mathcal{N}(\mu_1,\sigma_1^2)</math>
     and
     <math>\scriptstyle Q\,\sim\,\mathcal{N}(\mu_2,\sigma_2^2)</math> is:
@@ -62,7 +62,7 @@ def Bhattacharyya_coefficient(mu1, sig1, mu2, sig2):
                e^{-\frac{1}{4}\frac{(\mu_1-\mu_2)^2}{\sigma_1^2+\sigma_2^2}}.
     </math>
     '''
-    
+
     sum_sig_sqr = np.square(sig1) + np.square(sig2)
     sigma_ratio_factor = np.sqrt(2. * sig1 * sig2 / sum_sig_sqr)
     exponent = -np.square(mu1 - mu2) / sum_sig_sqr / 4.

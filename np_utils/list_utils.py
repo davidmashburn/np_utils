@@ -45,13 +45,13 @@ def totuple(a, break_strings=True):
        http://stackoverflow.com/questions/10016352/convert-numpy-array-to-tuple
        Modified to handle strings without throwing recursion errors
        (since 'a'[0] == 'a')
-       
+
        By default, uses break_strings=True, same handling as tuple itself:
        totuple('abcdef') == totuple('abcdef') == ('a', 'b', 'c', 'd', 'e', 'f')
-       
+
        Using break_strings=False leaves larger strings alone:
        totuple('abcdef', break_strings=False) == 'abcdef'
-       
+
        totuple is especially effective for creating hashable structures
        for use in dict and set'''
     if isinstance(a, basestring) and (len(a) == 1 or not break_strings):
@@ -155,7 +155,7 @@ def all_equal(l, equality_function=operator.eq):
     l = iter_to_list(l)
     if len(l)<2:
         return True
-    
+
     l0 = l[0]
     return all([equality_function(i, l0) for i in l])
 
@@ -177,14 +177,14 @@ def assertSameAndCondense(l, message='List values differ!',
 
 def flatten(l,repetitions=1):
     '''A wrapper around the generator-based list flattener (quite fast)
-       
+
        Use like: flatten(aList,3)
-       
+
        Another (nominally faster) version of this is: [ l for i in aList for j in i for k in j for l in k ]
        but it's unable to deal with jagged arrays.
-       
+
        A terse but slower version of flatten (1 repetition) can also be acheived with: sum(aList,[])
-       
+
        An even faster version of flatten (1 repetition, non-jagged arrays)
        can be acheived with itertools.chain: list(chain(*l))
        '''
@@ -239,21 +239,21 @@ def zipIntoPairs(l,cycle=False,offset=1):
 
 def intersperse(l,separator):
     '''Intersperse a separator between all items
-       
+
        Example:
        >>> interperse([1,2,3,4],42)
        [1,42,2,42,3,42,4]
-       
+
        Works by zipping together the list and a list of separators, then
        flattening the result and clipping off the end:
          flatten(zip( l, [sep]*len(l) ))[:-1]
-       
+
        With itertools, this could be written as the longer (but ~3x faster):
          list(islice(chain(*izip( l, [sep]*len(l) )),0,2*len(l)-1))
-       
+
        This horrific list comprehension is also faster:
          [ k for j in izip( l, [sep]*len(l) ) for k in j ][:-1]'''
-    
+
     return flatten(zip( l, [separator]*len(l) ))[:-1]
 
 # Splitting:
@@ -275,7 +275,7 @@ def split_at_boundaries(l, boundaries):
                             (-1 if boundaries[-1] == lenl else None)]
     if not len(boundaries):
         return [l]
-    
+
     start_end = chain([[0, boundaries[0]]],
                       zip(islice(boundaries, 0, lenl-1),
                           islice(boundaries, 1, None)),
@@ -302,7 +302,7 @@ def _function_ize(x):
         # x is a boolean value, so make a simple function
         bool_val = x
         x = lambda i: bool_val
-    
+
     return x
 
 def split_list_on_condition(l, cond):
@@ -349,7 +349,7 @@ def groupByFunction(l,f,appendFun=None):
     '''Break up a list into groups (a dict of smaller lists) based on a
        common property (the result of the function f applied to each element).
        Optionally, transform the elements before appending them with appendFun.
-       
+
        Examples:
        >>> groupByFunction([1,2,3,4,5,6,7,8],lambda x:x<5)
        {False: [5, 6, 7, 8], True: [1, 2, 3, 4]})
@@ -357,15 +357,15 @@ def groupByFunction(l,f,appendFun=None):
        {1: [(1, 1), (1, 2)], -1: [(-1, 3), (-1, 4)]}
        >>> groupByFunction([(1,1),(1,2),(-1,3),(-1,4)],lambda x:x[0],lambda x:x[1])
        {1: [1, 2], -1: [3, 4]}
-       
+
        where obviously the lambdas in the last 2 examples could be
        replaced with calls to operator.itemgetter instead
-       
+
        This method is based on an example given for collections.defaultdict in:
        http://docs.python.org/2/library/collections.html
-       
+
        Another simple way to acheive this would be using itertools.groupby:
-       
+
        from future.utils import lmap
        from itertools import groupby
        if appendFun==None:
@@ -386,7 +386,7 @@ def getElementConnections(connectionSets):
        {1:[2], 2:[1,6], 4:[5], 5:[4], 6:[2]}
        >>> getElementConnections([[1,2],[2,3,4]]):
        {1:[2], 2:[1,3,4], 3:[2,4], 4:[2,3]}
-       
+
        connectionSets must be a nested structure with a depth of 2 (i.e. a list-of-lists)
        and all elements must be immutables (for use in a set)'''
     # Algorithm summary:
@@ -426,7 +426,7 @@ def getChainsFromConnections(connections,checkConnections=True):
     connections = deepcopy(connections) # Protect the input from modification
     if checkConnections: # Check that there is no branching
         assert all( len(v)<3 for k,v in viewitems(connections) ), 'Aborting; this network has branching'
-    
+
     chains = []
     while len(connections): # loop over possible chains
         # Pick a starting point (an end point if possible)
@@ -494,7 +494,7 @@ def key_collector(x, collection=None):
        x can be a <list/dict> of <list/dict/other> of ...
        with any structure'''
     collection = set()
-    
+
     if hasattr(x, 'keys') and hasattr(x, 'values'):
         collection.update(x.keys())
         for v in x.values():
@@ -502,7 +502,7 @@ def key_collector(x, collection=None):
     elif hasattr(x, '__iter__'):
         for i in x:
             collection.update(key_collector(i))
-    
+
     return collection
 
 def directional_key_collector(x, collection=None, last_key='<TOP LEVEL>', skip_list=False):
@@ -515,7 +515,7 @@ def directional_key_collector(x, collection=None, last_key='<TOP LEVEL>', skip_l
        special keys called <TOP_LEVEL> and <LIST> are used for last_key
        when the key's dictionary is the object or is in inside a list'''
     collection = set()
-    
+
     if hasattr(x, 'keys') and hasattr(x, 'values'):
         for k, v in x.iteritems():
             collection.add((last_key, k))
@@ -524,7 +524,7 @@ def directional_key_collector(x, collection=None, last_key='<TOP LEVEL>', skip_l
         lk = last_key if skip_list else '<LIST>'
         for i in x:
             collection.update(directional_key_collector(i, last_key=lk, skip_list=skip_list))
-    
+
     return collection
 
 ##########################################
@@ -669,7 +669,7 @@ def listMul(x,y,matchTopDown=True):
 def listDiv(x,y,matchTopDown=True,useIntegerDivision=False):
     '''matchTopDown=True uses ShallowCompare
        matchTopDown=False uses DeepCompare (slower)
-       
+
        useIntegerDivision=True uses interger division (//)
        instead of true division'''
     _applyInfix = ( applyInfix_ShallowCompare if matchTopDown else
@@ -717,7 +717,7 @@ class fancyIndexingList(list):
          fL([1,2,3,4,5])[((1,2),)] -> [2,3]
          fL([1,2,3,4,5])[([1,2],)] -> [2,3]
          fL([1,2,3,4,5])[[[1,2]]] -> [2,3]
-       
+
        And, fL indices can also be nested; this gives a new list which has the (0,0) element and the (2,1) element:
          fL( [[1,7],[2,3],[4,5,6],[7,8,9,10]] )[((0,0),(2,1)),] -> [1,5]
        And in case your head doesn't hurt by now (mine does), here is an example that combines all of the above,
@@ -738,10 +738,10 @@ class fancyIndexingList(list):
             index=(index,) # make sure index is always a tuple
         if not index.__class__==tuple:
             index = tuple(index) # make sure index is always a tuple
-        
+
         if len(index)==1:
             if hasattr(index[0],'__iter__'):
-                return [ self[i] for i in index[0] ] # if the single index is tuple of tuples, 
+                return [ self[i] for i in index[0] ] # if the single index is tuple of tuples,
             else:
                 return self._list_getitem(index[0]) # for a single index, use list's default indexing
         elif type(index[0])==slice:
@@ -758,7 +758,7 @@ fL = fancyIndexingList
 class fancyIndexingListM1(fancyIndexingList):
     '''fancyIndexingListM1 is overloaded as "fLm1"
        Just like fancyIndexingList, but changes indices to be 1-indexed: fLm1(i)[1] -> i[0]
-       VERY useful if dealing with code from Octave, Matlab, Mathematica, etc... 
+       VERY useful if dealing with code from Octave, Matlab, Mathematica, etc...
        Documentation for fancyIndexingList:\n\n'''+fancyIndexingList.__doc__
     def m1(self,x): # These don't really need to be in the class, but it's cleaner that way...
         '''minus 1 if x>0'''
@@ -789,21 +789,21 @@ def genericSlice(length,start=None,stop=None,step=None,includeStop=False,oneBase
        * 0-based and 1-based indexing
        * optional bounds checking
        * +/-/None indexes (as usual)
-       
+
        Requires the length of the list that will be sliced.
-       
+
        Returns a slice object.
        (failure results in a None value at the moment)'''
     maxStop = (length-1 if includeStop else length)
-    
+
     # Always fail if step is 0
     if step==0:
         return None
-    
+
     # Fail on 0-values in 1-based indexing when checking bounds
     if checkBounds and oneBased and (start==0 or stop==0):
         return None
-    
+
     # Wrap negative values to positive ones and then convert from
     # 1-based to 0-based indexing
     if start!=None:
@@ -816,7 +816,7 @@ def genericSlice(length,start=None,stop=None,step=None,includeStop=False,oneBase
             stop += length
         elif oneBased:
             stop -=1
-    
+
     # If either value goes negative and we are not checking bounds,
     # then set it to None avoid wrap-around
     if not checkBounds:
@@ -824,7 +824,7 @@ def genericSlice(length,start=None,stop=None,step=None,includeStop=False,oneBase
             start=None
         if stop<0:
             stop=None
-    
+
     # Handle all the None cases
     if step==None:
         step=1
@@ -838,7 +838,7 @@ def genericSlice(length,start=None,stop=None,step=None,includeStop=False,oneBase
             start = length-1
         if stop==None:
             stop = (0 if includeStop else -1)
-    
+
     # Fail on out-of-bounds if checkBounds is specified (still somewhat lenient)
     if checkBounds:
         if ( not 0<=start<length or
@@ -846,14 +846,14 @@ def genericSlice(length,start=None,stop=None,step=None,includeStop=False,oneBase
              step>0 and start-stop>1 or
              step<0 and stop-start>1 ):
             return None
-    
+
     # Increment (or decrement) the stop value to include it
     if includeStop:
         # Add the sign of the step to the stop
         stop += (1 if step>0 else -1)
-        
+
     # If this made stop negative, set it to None avoid wrap-around
     if stop<0:
         stop=None
-    
+
     return slice(start,stop,step)

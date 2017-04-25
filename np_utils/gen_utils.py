@@ -6,7 +6,7 @@ Conversion utilities:
 Flow control utilities:
     minmax -> Return the tuple (min(...), max(...))
     callFunctionIfNotNone -> Take a function of 2 arguments (a and b) and return
-                             None if both a and b are None, 
+                             None if both a and b are None,
                              a if b is None (and vice versa),
                              and f(a,b) if neither is None.
     minmaxIgnoreNone -> A poorly named function that takes 2 minima and
@@ -46,13 +46,13 @@ def floatIntStringOrNone(string):
     '''An even more generic version of intOrFloat'''
     if string=='None':
         return None
-    
+
     for fun in (int, float):
         try:
             return fun(string)
         except ValueError:
             pass
-    
+
     return string
 
 def islistlike(x):
@@ -122,8 +122,7 @@ def callFunctionIfNotNone(f,a,b):
 def minmaxIgnoreNone(Amin,Bmin, Amax,Bmax): ## pairwiseMinMaxIgnoreNone(Amin,Bmin, Amax,Bmax):
     '''Given two minima and two maxima, calculate the global minima and maxima,
        ignoring values that are None
-       
+
        TODO: This should be renamed (maybe pairwiseMinMaxIgnoreNone?) to avoid confusion with minmax
        BTW, when you do fix the name, realize that the max was computing mins instead!!!!''' #TODO
     return callFunctionIfNotNone(min,Amin,Bmin),callFunctionIfNotNone(max,Amax,Bmax)
-
