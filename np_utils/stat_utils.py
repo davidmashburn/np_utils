@@ -50,6 +50,25 @@ def sample_from_buckets(buckets, weights, num=1):
     '''Given a grouping of buckets and weights, randomly select N buckets'''
     return np.asanyarray(buckets)[sample_weights(weights, num)]
 
+def weight_combinator(weights):
+    '''Combine multiple weights (0-1) into a single weight (0-1).
+    
+    The final score will always be greater than the largest score,
+    but less than 1.
+    
+    The formula used is:
+    Max score + (1 - Max_score) * (Second Max Score) + ...
+    
+    Where each successive score uses the same formula:
+    score += (1 - score) * next_largest_score
+    '''
+    assert all([0 <= i <= 1
+                for i in l])
+    score = 0
+    for i in sorted(l, reverse=True):
+        score += (1 - score) * i
+    return score
+
 def Bhattacharyya_coefficient(mu1, sig1, mu2, sig2):
     '''Compute the Bhattacharyya coefficient between two normal distributions
     See https://en.m.wikipedia.org/wiki/Hellinger_distance
