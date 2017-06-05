@@ -15,8 +15,8 @@
    '''
 from __future__ import absolute_import
 from __future__ import division
-from builtins import zip
-from builtins import range
+from builtins import zip, map, range
+from future.utils import lmap
 
 from copy import copy
 import numpy as np
@@ -137,6 +137,38 @@ def blitSphereToArray(arr,x,y,z,r,val):
     #print arr[xL:xH,yL:yH].shape,c.shape
     arr[xL:xH,yL:yH,zL:zH] *= (1-c)
     arr[xL:xH,yL:yH,zL:zH] += (val*c)
+
+########################################################################
+##                       Gradient Drawing                             ##
+########################################################################
+def nd_gradient(shape, origin_val, stopvals):
+    grids = np.mgrid.__getitem__(lmap(slice, shape))
+    ortho_grads = [g * (stop - origin_val) / (s - 1)
+                   for s, stop, g in zip(shape, stopvals, grids)]
+    return origin_val + sum(ortho_grads)
+
+def nd_radial_gradient(shape, offsets=None):
+    if offsets is None: 
+        offsets = [0] * len(shape)
+    grids = np.mgrid.__getitem__(lmap(slice, shape))
+    v = [(g + off + 0.5 - s / 2) ** 2
+         for s, off, g in zip(shape, offsets, grids)]
+    return np.sqrt(np.sum(v, axis=0))
+
+def interpolated_radial_gradient(shape, stops, values, offsets=None, outer_radius=None, clip=True):
+    '''Get a radial gradient with values interpolated.
+    
+    Stops and values define the interpolation scheme based on distance
+    from the origin.
+    
+    (Needs testing)
+    '''
+    outer_radius = (np.sqrt(np.sum(np.square(shape))) / 2 if outer_radius is None else
+                    outer_radius)
+    grad = nd_radial_gradient(shape, offsets)
+    if clip:
+        grad = np.clip(grad / outer_radius, 0, 1)
+    return np.interp(grad.flat, stops, values).reshape(shape)
 
 ###############################################################################
 ##                   Functions for Bresenham Triangles                       ##
