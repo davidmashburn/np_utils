@@ -108,6 +108,17 @@ def test_split_at_boundaries_1():
     s = split_at_boundaries([1,2,3,4,5,6,7,8,9], [2,5,6])
     assert s == [[1, 2], [3, 4, 5], [6], [7, 8, 9]]
 
+def test_values_sorted_by_keys_1():
+    assert list(values_sorted_by_keys({2: 'b', 1: 'a'}, key=None)) == ['a', 'b']
+
+def test_values_sorted_by_keys_2():
+    np.random.seed(0)
+    keys = np.random.randint(0, 100000, size=100)
+    assert len(np.unique(keys)) == len(keys), 'Unit test bug, choose new keys'
+    values = np.random.rand(100)
+    assert np.array_equal(list(values_sorted_by_keys(dict(zip(keys, values)), key=None)),
+                          values[np.argsort(keys)])
+
 def test_rotate_list_of_dicts_1():
     assert rotate_list_of_dicts(SAMPLE_LD_1) == REV_LD_1
 
@@ -182,8 +193,10 @@ if __name__ == '__main__':
     test_split_list_on_condition_2()
     test_split_list_on_condition_3()
     test_split_at_boundaries_1()
-    test_rotate_dict_of_lists_1()
+    test_values_sorted_by_keys_1()
+    test_values_sorted_by_keys_2()
     test_rotate_list_of_dicts_1()
+    test_rotate_dict_of_lists_1()
     test_shallowAdd_1()
     test_shallowAdd_2()
     test_shallowAdd_3()

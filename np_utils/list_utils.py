@@ -470,6 +470,11 @@ def dict_key_union(dicts):
             keys.update(d.keys())
     return list(keys)
 
+def values_sorted_by_keys(d, key=None):
+    '''Simple utility to get back the values from a dictionary
+       Returns a generator.'''
+    return (d[k] for k in sorted(d.keys(), key=key))
+
 def rotate_list_of_dicts(ld):
     '''Change from a list of dicts to a dict of lists
        Fill missing entries with "None"
