@@ -8,6 +8,25 @@ def gaussian_pdf(x, mu=0, sig=1, use_coeff=True):
     coeff = 1 / sig / np.sqrt(2. * np.pi) if use_coeff else 1
     return coeff * np.exp(-np.square(x - mu) / (2. * np.square(sig)))
 
+def multi_random_normal(means, stds, counts, shuffle=True):
+    '''Sample from multiple gaussian distributions.
+
+       Takes 3 arrays (or lists, or singletons) for:
+          means: gaussian mean
+          stds: gaussian standard deviation
+          counts: number of points to sample from each distribution
+
+       Optionally shuffles the result
+
+       Returns a float array of length sum(counts)'''
+    means, stds, counts = map(_listify, [means, stds, counts])  # Ensure lists
+    out = np.concatenate([np.random.normal(mean, std, count)
+                          for mean, std, count in zip(means, stds, counts)])
+    if shuffle:
+        np.random.shuffle(out)
+
+    return out
+
 def uniformSphericalNoise(*shape):
     '''Creates a uniform distributions within the volume of a hyper-sphere.
        (Implementats the Box-Mueller algorithm)
