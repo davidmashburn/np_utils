@@ -88,6 +88,19 @@ def weight_combinator(weights):
         score += (1 - score) * i
     return score
 
+def uniform_distribution_overlap(m1, s1, m2, s2):
+    '''Find the overlap between two uniform distributions
+    
+    Compute the integral of two uniform distributions
+    centered on m1 and m2
+    with widths 2 * s1 and 2 * s2
+    and heights 1 / (2 * s1) and 1 / (2 * s2)
+    '''
+    h1h2 = 1 / (4 * s1 * s2)
+    return np.clip((np.min(np.broadcast_arrays(m1 + s1, m2 + s2), axis=0) -
+                    np.max(np.broadcast_arrays(m1 - s1, m2 - s2), axis=0)),
+                   0, None) / h1h2
+
 def Bhattacharyya_coefficient(mu1, sig1, mu2, sig2):
     '''Compute the Bhattacharyya coefficient between two normal distributions
     See https://en.m.wikipedia.org/wiki/Hellinger_distance
