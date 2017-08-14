@@ -697,20 +697,22 @@ def is_boxed(a):
             a.dtype == object and
             a.shape[0] == 1)
 
-def _broadcast_arr_list(l):
+def _broadcast_arr_list(l, reverse=False):
     '''Helper function to broadcast all elements in a list to arrays with a common shape
        Uses broadcast_arrays unless there is only one box'''
     arr_list = lmap(np.asanyarray, l)
-    return (broadcast_arrays(*arr_list)
+    broadcast = (reverse_broadcast(broadcast_arrays) if reverse else
+                 broadcast_arrays)
+    return (broadcast(*arr_list)
             if len(arr_list) > 1 else
             arr_list)
 
-def unbox(boxed):
+def unbox(boxed, use_reverse_broadcast=False):
     '''Convert an array of arrays to one large array.
        If arr is not actually an array, just return it'''
     if not is_boxed(boxed):
         return boxed # already unboxed
-    arr = np.array(_broadcast_arr_list(boxed.ravel()))
+    arr = np.array(_broadcast_arr_list(boxed.ravel(), reverse=use_reverse_broadcast))
     return arr.reshape(box_shape(boxed) + arr.shape[1:])
 
 ###########################
@@ -796,7 +798,7 @@ def apply_at_depth(f, *args, **kwds):
           See docs for "box" for more details
         * broadcast each boxed argument to a common shape
           (bbl, short for broadcasted box_list)
-          Note that box *contents* can still have any  shape
+          Note that box *contents* can still have any shape
         * flatten each broadcasted box (bbl_flat)
           Each element of bbl_flat will be a 1D list
           of arrays where each list had the same length
@@ -822,7 +824,7 @@ def apply_at_depth(f, *args, **kwds):
        In other words, with:
        a = np.arange(2000).reshape(200, 2, 5)
        do this:
-       apply_at_depth_ravel(np.sum, depth=1)
+       apply_at_depth_ravel(np.sum, a, depth=1)
        instead of this:
        apply_at_depth(np.sum, a, depth=1)
        The latter is just essentially calling map(np.sum, a)'''
