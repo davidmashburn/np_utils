@@ -12,6 +12,28 @@ import np_utils
 from np_utils import *
 from np_utils._test_helpers import _get_sample_rec_array
 
+def test_multi_where_1d_1():
+    np.random.seed(0)
+    x = np.arange(1000)
+    np.random.shuffle(x)
+    subx = np.arange(100)
+    inds = multi_where_1d(x, subx)
+    assert np.array_equal(x[inds], subx)
+
+def test_multi_where_1d_2():
+    np.random.seed(0)
+    x = np.arange(1000)
+    np.random.shuffle(x)
+    subx = np.arange(-2, 100)
+
+    try:
+        multi_where_1d(x, subx)
+        failed = False
+    except AssertionError as E:
+        failed = True
+
+    assert failed
+
 def test_true_where_1():
     assert np.array_equal(true_where(4, [0, 2]),
                           [1, 0, 1, 0])
@@ -104,7 +126,7 @@ def test_group_transform_3():
 
     # Normalize groups (divide by mean) for 'o' in groups based on 'm' and 'n':
     simple_normalize = lambda x: x / x.mean()
-    normalized_o = group_transform(arr[['m', 'n']], arr['o'], simple_normalize, np.float)    
+    normalized_o = group_transform(arr[['m', 'n']], arr['o'], simple_normalize, np.float)
 
     assert not np.array_equal(bg_removed_p, background_subtract(arr['p']))
     assert np.isclose(np.mean(bg_removed_p), 0)
@@ -128,11 +150,11 @@ def test_rec_groupby_3():
     def compute_some_thing(x):
         o, p = x['o'], x['p']
         return np.mean(o) / np.std(o) * np.min(p)
-    
+
     g_r = rec_groupby(a, ['m', 'n'], (compute_some_thing, ['o', 'p'], 'its_complicated'))
     g_n = np_groupby(a[['m', 'n']], a, compute_some_thing,
                      names=['m', 'n', 'its_complicated'])
-    
+
     assert np.all(g_r == g_n)
 
 def test_rec_groupby_4():
@@ -140,10 +162,10 @@ def test_rec_groupby_4():
     def compute_some_thing(x):
         o, p = x['o'], x['p']
         return np.mean(o) / np.std(o) * np.min(p)
-    
+
     g_mn = rec_groupby(a, ['m', 'n'], (compute_some_thing, ['o', 'p'], 'its_complicated'))
     g_nm = rec_groupby(a, ['n', 'm'], (compute_some_thing, ['o', 'p'], 'its_complicated'))
-    
+
     assert not np.array_equal(g_mn, g_nm)
 
 def test_np_and_rec_groupby_full_1():
@@ -151,7 +173,7 @@ def test_np_and_rec_groupby_full_1():
     simple_rank = lambda x: np.argsort(x) + 1
     background_subtract = lambda x: x - x.mean()
     simple_normalize = lambda x: x / x.mean()
-    
+
     n = np_groupby_full(arr[['m', 'n']], arr,
        (lambda x: simple_rank(x['o']), np.int),
        (lambda x: simple_rank(x[['o', 'p']]), np.int),
@@ -159,14 +181,14 @@ def test_np_and_rec_groupby_full_1():
        (lambda x: simple_normalize(x['p']), np.float),
        names=['m', 'n', 'rank_o', 'rank_op', 'bg_sub_o', 'norm_p']
     )
-    
+
     r = rec_groupby_full(arr, ['m', 'n'],
         (simple_rank,         np.int,   'o',        'rank_o'),
         (simple_rank,         np.int,   ['o', 'p'], 'rank_op'),
         (background_subtract, np.float, 'o',        'bg_sub_o'),
         (simple_normalize,    np.float, 'p',        'norm_p')
     )
-    
+
     assert np.array_equal(n, r)
 
 def test_rec_groupby_full_2():
@@ -174,7 +196,7 @@ def test_rec_groupby_full_2():
     simple_rank = lambda x: np.argsort(x) + 1
     background_subtract = lambda x: x - x.mean()
     simple_normalize = lambda x: x / x.mean()
-    
+
     r = rec_groupby_full(arr, ['m', 'n'],
         #(simple_rank,         np.int,   'o',        'rank_o'),
         #(simple_rank,         np.int,   ['o', 'p'], 'rank_op'),
@@ -215,7 +237,7 @@ def test_get_first_indices_1():
     assert np.all(get_first_indices(a, [1, 4, 12,13]) == [1, 5, 7, None])
     assert np.all(get_first_indices(a, [1, 4, 12, 13], missing='len') == [1, 5, 7, len(a)])
     assert np.all(get_first_indices(a, [1, 4, 12, 13], missing=-1) == [1, 5, 7, -1])
-    
+
     try:
         np.all(get_first_indices(a, [1, 4, 12, 13], missing='fail') == [1, 5, 7, -1])
         intentioned_fail = False
@@ -227,7 +249,7 @@ def test_cartesian_records_1():
     a = np.array([(1.,), (2.,), (3.,)], dtype=[('a', np.float)])
     b = np.array([(4,), (5,)], dtype=[('b', np.int)])
     c = np.array([(6,), (7,)], dtype=[('c', np.int)])
-    
+
     r = cartesian_records([a, b, c])
     expected_dtype = [('a', np.float), ('b', np.int), ('c', np.int)]
     expected_result = np.array([(1., 4, 6),
@@ -255,9 +277,9 @@ def test_rec_inner_join_1():
     a = np.array([('x', 1.), ('x', 2.), ('y', 3.)], dtype=[('s', 'S20'), ('a', np.float)])
     b = np.array([('x', 4), ('y', 5), ('x', 0)], dtype=[('s', 'S20'), ('b', np.int)])
     c = np.array([(6, 'x'), (7, 'y'), (9, 'z')], dtype=[('c', np.int), ('s', 'S20')])
-    
+
     r = rec_inner_join('s', a, b, c)
-    
+
     expected_dtype = [('s', 'S20'), ('a', np.float), ('b', np.int), ('c', np.int)]
     expected_result = np.array([('x', 1., 4, 6),
                                 ('x', 1., 0, 6),
@@ -265,10 +287,12 @@ def test_rec_inner_join_1():
                                 ('x', 2., 0, 6),
                                 ('y', 3., 5, 7),
                                ], dtype=expected_dtype)
-    
+
     assert np.array_equal(r, expected_result)
 
 if __name__ == '__main__':
+    test_multi_where_1()
+    test_multi_where_2()
     test_true_where_1()
     test_true_where_2()
     test_split_at_boundaries_1()

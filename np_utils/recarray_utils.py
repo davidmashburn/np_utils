@@ -48,6 +48,22 @@ import numpy as np
 from .gen_utils import islistlike
 from .list_utils import split_at_boundaries, flatten, fL
 
+def multi_where_1d(x, subx):
+    '''Find the locations of a subset in the original array
+
+    Assumes subx is a subset of x and finds all the indices in x
+    Disallows duplicates in x or subx
+    Taken from https://stackoverflow.com/a/8251668/2344211
+    in https://stackoverflow.com/questions/8251541/numpy-for-every-element-in-one-array-find-the-index-in-another-array
+    '''
+    msg = 'All elements of subx must be in x!'
+    assert np.all(np.intersect1d(x, subx) == np.sort(subx)), msg
+
+    xsorted = np.argsort(x)
+    ypos = np.searchsorted(x[xsorted], subx)
+    indices = xsorted[ypos]
+    return indices
+
 def _get_index_groups_old(arr):
     '''For a 1D array, get all unique values (keys)
         and the locations of each value in the original array (index_groups).
