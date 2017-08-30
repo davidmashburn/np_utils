@@ -166,7 +166,7 @@ def assertSameAndCondense(l, message='List values differ!',
        This acts as a safe funnel in exploratory data processing,
        cutting a large same-valued list down to a single value.'''
     l = iter_to_list(l)
-    assert all_equal(l), message
+    assert all_equal(l, equality_function=equality_function), message
     return l[0]
 
 #####################################################
