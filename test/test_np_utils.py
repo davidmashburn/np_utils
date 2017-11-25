@@ -93,7 +93,7 @@ def test_limitInteriorPoints_r5_2_True():
 
 def test_limitInteriorPoints_r5_7_True():
     assert limitInteriorPoints(range(5),7,uniqueOnly=True) == lrange(5)
-    
+
 def test_limitInteriorPoints_r5_7_False():
     assert limitInteriorPoints(range(5),7,uniqueOnly=False) == [0,0,1,2,2,2,3,4,4]
 
@@ -157,6 +157,22 @@ def test_cartesian_1():
                                     [3, 4, 7],
                                     [3, 5, 6],
                                     [3, 5, 7]]))
+
+def test_sliding_window_1():
+    # Doesn't actually test the sliding part of the sliding windows, but that's ok for now
+    a = np.arange(24).reshape(4, 6)
+    b = sliding_window(a, (2, 2))
+    assert b.shape == (6, 2, 2)
+    assert np.array_equal(b,
+                          a.reshape(2, 2, 3, 2)
+                           .transpose(0,2,1,3)
+                           .reshape(6, 2, 2))
+
+    c = sliding_window(a, (2, 2), flatten=False)
+    assert c.shape == (2, 3, 2, 2)
+    assert np.array_equal(c,
+                          a.reshape(2, 2, 3, 2)
+                           .transpose(0,2,1,3))
 
 def test_interpNaNs_0nnn4_r5():
     assert np.all(interpNaNs(np.array([0,np.nan,np.nan,np.nan,4]))==lrange(5))
@@ -282,19 +298,19 @@ def test_apply_at_depth_0():
                           apply_at_depth(np.subtract, a, np.array([1]), depths=2))
     assert np.array_equal(a - 1,
                           apply_at_depth(np.subtract, a, np.array([1]), depths=[2, 2]))
-    
+
     fail = False
     try:    apply_at_depth(np.subtract, a, np.array([1]), depth=2, depths=2)
     except: fail = True
     assert fail
-        
+
 
 def test_apply_at_depth_1():
     a = np.arange(24).reshape([2, 3, 4])
-    
+
     np.array_equal(apply_at_depth(np.sum, a),
                    apply_at_depth_ravel(np.sum, a))
-    
+
     for depth in [0] + lrange(-4,4):
         assert np.array_equal(apply_at_depth(np.sum, a, depth=depth),
                               apply_at_depth_ravel(np.sum, a, depth=depth))
@@ -385,6 +401,7 @@ if __name__ == '__main__':
     test_shape_divide_i24_22_first()
     test_shape_divide_i24_22_all()
     test_cartesian_1()
+    test_sliding_window_1()
     test_interpNaNs_0nnn4_r5()
     interpNumpy_1345_half()
     interpNumpy_11354050_half()
@@ -415,6 +432,6 @@ if __name__ == '__main__':
     test_apply_at_depth_1()
     test_apply_at_depth_2()
     test_apply_at_depth_3()
-    
-    
+
+
 
