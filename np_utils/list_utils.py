@@ -701,6 +701,88 @@ def interpGen(l,index):
         return shallowAdd( shallowMul( l[indexA],(1-m) ),
                             shallowMul( l[indexB],m ) )
 
+def _make_fancy(*args, **kwds):
+    '''Return a fancyIndexingList or a fancyIndexingDict
+
+    Returns a fancyIndexingList if the first argument is a not a dict
+    Otherwise returns fancyIndexingDict
+    Returns fancyIndexingList if no arguments are passed
+    '''
+    return (fancyIndexingDict(*args, **kwds)
+            if len(kwds) or (len(args) and hasattr(args[0], 'keys')) else
+            fancyIndexingList(*args, **kwds))
+
+def _make_fancy_m1(*args, **kwds):
+    '''Return a fancyIndexingListM1 or a fancyIndexingDictM1
+
+    Returns a fancyIndexingListM1 if the first argument is a not a dict
+    Otherwise returns fancyIndexingDictM1
+    Returns fancyIndexingListM1 if no arguments are passed
+    '''
+    return (fancyIndexingDictM1(*args, **kwds)
+            if len(kwds) or (len(args) and hasattr(args[0], 'keys')) else
+            fancyIndexingListM1(*args, **kwds))
+
+def _fancy_getitem(fancy_x, index):
+    '''Generic __getitem__ for fancyIndexingDict and fancyIndexingList
+
+    Takes a fancy object an index object and returns the result as a
+    nested list/dict
+    '''
+    # Make sure index is always a tuple
+    index = index if hasattr(index, '__iter__') else (index, )
+    index = index if type(index) is tuple else tuple(index)
+
+    if isinstance(fancy_x, fancyIndexingDict):
+        x = fancy_x._simple_getitem(index[0])
+        return (x if len(index) <= 1 else
+                fancy_x._make_fancy(x)[index[1:]])
+    else:  # is a fancyIndexingList
+        if len(index) == 1:
+            # End recursion and return the result
+            # Use simple list indexing unless the index is a tuple of tuples
+            return ([fancy_x[i] for i in index[0]]
+                    if hasattr(index[0], '__iter__') else
+                    fancy_x._simple_getitem(index[0]))
+        elif type(index[0]) == slice:
+            return [fancy_x._make_fancy(f_i)[index[1:]]
+                    for f_i in fancy_x[index[0]]]
+        elif hasattr(index[0],  '__iter__'):
+            return [fancy_x._make_fancy(fancy_x[i])[index[1:]]
+                    for i in index[0]]
+        else:
+            return fancy_x._make_fancy(fancy_x[index[0]])[index[1:]]
+
+class fancyIndexingDict(dict):
+    '''Dictionary that supports "nested" indexing
+
+    Expects to wrap a dictionary that includes other dictionaries or lists
+
+    Examples:
+      fD({'a':[5, {'c': 15}]})['a', 1, 'c'] == 15
+
+    While it would be nice to support tuple-indexing like:
+      fD({'a': [1], 'b': [2], 'c': [3]})[('a', 'b'), 0] == [1, 2]
+    this is not possible because dictionary keys can be tuples
+
+    Cooperatively uses fancyIndexingList as needed
+
+    One caveat is that for _normal_ dict tuple indexing,
+    you need to wrap in an extra tuple:
+      fD({('a', 'b'): 1})['a', 'b'] --> Error
+      fD({('a', 'b'): 1})[('a', 'b'), ] == 1
+    '''
+    def _make_fancy(self, *args, **kwds):
+        return _make_fancy(*args, **kwds)
+
+    def _simple_getitem(self, key):
+        return dict.__getitem__(self, key)
+
+    def __getitem__(self, index):
+        return _fancy_getitem(self, index)
+
+fD = fancyIndexingDict
+
 class fancyIndexingList(list):
     '''fancyIndexingList is overloaded as "fL"
        Gives lists the magical properties of numpy arrays, but without requiring regular shapes...
@@ -732,33 +814,26 @@ class fancyIndexingList(list):
        This type of usage is NOT recommended, because it is so opaque and covoluted.
        (It's actually just a consequence of the implementation.)
        '''
-    def new_fL(self,*args,**kwds):
-        '''Just a wrapper around the class constructor for a new instance, fancyIndexingList()'''
-        return fancyIndexingList(*args,**kwds)
-    def _list_getitem(self,index):
-        '''Just a wrapper around list.__getitem__()'''
-        return list.__getitem__(self,index) # for a single index, use list's default indexing
-    def __getitem__(self,index):
-        if not hasattr(index,'__iter__'):
-            index=(index,) # make sure index is always a tuple
-        if not index.__class__==tuple:
-            index = tuple(index) # make sure index is always a tuple
+    def _make_fancy(self, *args, **kwds):
+        return _make_fancy(*args, **kwds)
 
-        if len(index)==1:
-            if hasattr(index[0],'__iter__'):
-                return [ self[i] for i in index[0] ] # if the single index is tuple of tuples,
-            else:
-                return self._list_getitem(index[0]) # for a single index, use list's default indexing
-        elif type(index[0])==slice:
-            return [ self.new_fL(i)[index[1:]] for i in self[index[0]] ] # recurse
-        elif hasattr(index[0],'__iter__'):
-            return [ self.new_fL(self[i])[index[1:]] for i in index[0] ] # recurse
-        else:
-            return self.new_fL(self[index[0]])[index[1:]] # recurse
-    def __getslice__(self,i,j):
-        return self.__getitem__(slice(i,j))
+    def _simple_getitem(self, index):
+        '''Just a wrapper around list.__getitem__()'''
+        return list.__getitem__(self, index)  # for a single index, use list's default indexing
+
+    def __getitem__(self, index):
+        return _fancy_getitem(self, index)
+
+    def __getslice__(self, i, j):
+        return self.__getitem__(slice(i, j))
 
 fL = fancyIndexingList
+
+class fancyIndexingDictM1(fancyIndexingDict):
+    def _make_fancy(self, *args, **kwds):
+        return _make_fancy_m1(*args, **kwds)
+
+fDm1 = fancyIndexingDictM1
 
 class fancyIndexingListM1(fancyIndexingList):
     '''fancyIndexingListM1 is overloaded as "fLm1"
@@ -766,26 +841,30 @@ class fancyIndexingListM1(fancyIndexingList):
        VERY useful if dealing with code from Octave, Matlab, Mathematica, etc...
        Documentation for fancyIndexingList:\n\n'''+fancyIndexingList.__doc__
     def m1(self,x): # These don't really need to be in the class, but it's cleaner that way...
-        '''minus 1 if x>0'''
-        return (None if x==None else (x-1 if x>0 else x))
+        '''minus 1 if x > 0'''
+        return (None if x is None else
+                x - 1 if x > 0 else
+                x)
 
-    def m1gen(self,x):
+    def m1gen(self, x):
         '''m1, but able to handle iterables (lists, tuples, ...) and slices as well'''
-        if hasattr(x,'__iter__'):
-            return lmap(self.m1gen,x)
-        elif type(x)==slice:
-            return slice(self.m1(x.start),self.m1(x.stop),x.step)
-        elif type(x)==int:
+        if hasattr(x, '__iter__'):
+            return lmap(self.m1gen, x)
+        elif type(x) is slice:
+            return slice(self.m1(x.start), self.m1(x.stop), x.step)
+        elif type(x) is int:
             return self.m1(x)
         else:
             print("Not sure what you're feeding me... signed, fancyIndexingListM1.m1gen")
             return self.m1(x)
-    def new_fL(self,*args,**kwds):
-        '''Just a wrapper around the class constructor for a new instance, fancyIndexingListM1()'''
-        return fancyIndexingListM1(*args,**kwds)
-    def _list_getitem(self,index):
+
+    def _make_fancy(self, *args, **kwds):
+        return _make_fancy_m1(*args, **kwds)
+
+    def _simple_getitem(self,index):
         '''Just a wrapper around list.__getitem__(), but subtracts 1 from index'''
-        return list.__getitem__(self,self.m1gen(index)) # for a single index, use list's default indexing
+        return list.__getitem__(self, self.m1gen(index)) # for a single index, use list's default indexing
+
 fLm1 = fancyIndexingListM1
 
 def genericSlice(length,start=None,stop=None,step=None,includeStop=False,oneBased=False,checkBounds=False):
