@@ -309,7 +309,11 @@ def split_list_on_condition(l, cond):
     '''Split list "l" based on condition "cond" which can be:
           * a function returning booleans
           * an iterable of booleans
-          * a single boolean'''
+          * a single boolean
+    
+    Returns:
+       true_list, false_list
+    '''
     cond = _function_ize(cond)
     true_list, false_list = [], []
     for i in l:
