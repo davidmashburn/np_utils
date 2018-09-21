@@ -12,6 +12,7 @@ import np_utils
 from np_utils import *
 from np_utils._test_helpers import _get_sample_rec_array
 
+
 def test_multi_where_1d_1():
     np.random.seed(0)
     x = np.arange(1000)
@@ -245,6 +246,31 @@ def test_get_first_indices_1():
         intentioned_fail = True
     assert intentioned_fail
 
+def test_cat_recarrays_on_columns_1():
+    r = _get_sample_rec_array()
+    cat = cat_recarrays_on_columns([r, r], ['i', 'o'])
+    assert cat.dtype == [('i', '<i8'), ('o', '<f8')]
+
+def test_cat_recarrays_on_columns_2():
+    r = _get_sample_rec_array()
+    r = r.reshape(10, -1)
+    cat = cat_recarrays_on_columns([r, r], ['i', 'o'])
+    assert cat.dtype == [('i', '<i8'), ('o', '<f8')]
+    assert cat.ndim == 2
+    assert cat.shape[0] == 20
+    assert cat.shape[1] == r.shape[1]
+
+def test_cat_recarrays_1():
+    r = _get_sample_rec_array()
+    r = r.reshape(10, -1)
+    cat = cat_recarrays(r, r)
+    assert cat.dtype == r.dtype
+    assert cat.ndim == 2
+    assert cat.shape[0] == 20
+    assert cat.shape[1] == r.shape[1]
+    assert np.array_equal(cat,
+                          cat_recarrays_on_columns([r, r], r.dtype.names))
+
 def test_cartesian_records_1():
     a = np.array([(1.,), (2.,), (3.,)], dtype=[('a', np.float)])
     b = np.array([(4,), (5,)], dtype=[('b', np.int)])
@@ -291,8 +317,8 @@ def test_rec_inner_join_1():
     assert np.array_equal(r, expected_result)
 
 if __name__ == '__main__':
-    test_multi_where_1()
-    test_multi_where_2()
+    test_multi_where_1d_1()
+    test_multi_where_1d_2()
     test_true_where_1()
     test_true_where_2()
     test_split_at_boundaries_1()
@@ -315,6 +341,9 @@ if __name__ == '__main__':
     test_is_first_occurrence_2()
     test_is_first_occurrence_and_1d_3()
     test_get_first_indices_1()
-    test_cartesian_records_1
+    test_cat_recarrays_on_columns_1()
+    test_cat_recarrays_on_columns_2()
+    test_cat_recarrays_1()
+    test_cartesian_records_1()
     test_rec_inner_join_on_one_input()
     test_rec_inner_join_1()

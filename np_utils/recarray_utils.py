@@ -466,6 +466,56 @@ def get_first_indices(arr, values, missing=None):
 
     return np.array(inds)
 
+def cat_recarrays_on_columns(arrays, column_names=(), limit=None):
+    """A flexible contatenation routine for record arrays
+
+    Assumes each array has every column in column_names
+    (and will throw an error otherwise)
+
+    Uses extra memory because it concatenates the column arrays before
+    combining them into a single record array
+    """
+    column_arrays = [np.concatenate([arr[i][:limit]
+                                     for arr in arrays])
+                     for i in column_names]
+    return np.rec.fromarrays(column_arrays, names=column_names)
+
+def cat_recarrays(*arrays):
+    """A flexible, space efficient contatenation routine for record arrays.
+
+    Computes the new dtype by doing np.concatenate on dummy data ( [:0] ),
+    builds an empty array, and then fills the data in column by column.
+
+    Only fields common to all record arrays will be used in the output array.
+
+    Algorithm summary:
+     * Find the column names common to all arrays (intersection)
+     * Order the column names based on their order in the first array
+     * Get the dtype of the new array by using dummy output (length 0)
+     * Get the output shape of the array by combining the length of the
+       overall with any additional dimensions (from the dummy output)
+     * Pre-allocate the concatenated array
+     * Fill the columns one at a time
+
+    TODO: for some reason this MASSIVELY eats memory for very long strings
+          in fact, it's allocating more space than is needed for the longest string...
+    """
+    common_names = set.intersection(*[set(a.dtype.names)
+                                      for a in arrays])
+    output_column_names = [i for i in arrays[0].dtype.names
+                             if i in common_names]
+    dummy_output = cat_recarrays_on_columns(arrays,
+                                            column_names=output_column_names,
+                                            limit=0)
+    ret_dtype = dummy_output.dtype
+    ret_shape = (sum(a.shape[0] for a in arrays),) + dummy_output.shape[1:]
+    ret_arr = np.empty(ret_shape, dtype=ret_dtype)
+    for column_name in output_column_names:
+        ret_arr[column_name] = np.concatenate([a[column_name]
+                                               for a in arrays])
+
+    return ret_arr
+
 def merge_recarrays(arrays):
     '''Fast version of join for structured arrays
        from http://stackoverflow.com/questions/5355744/numpy-joining-structured-arrays
