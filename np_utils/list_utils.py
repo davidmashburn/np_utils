@@ -336,6 +336,9 @@ def unshuffle_indices(indices):
     Another thing to note is that this is an involution
     (it is it's own inverse) so:
     unshuffle_indices(unshuffle_indices(x)) == x
+    
+    Reference:
+    https://codereview.stackexchange.com/questions/65031/creating-a-list-containing-the-rank-of-the-elements-in-the-original-list
     '''
     unshuffled = [0] * len(indices)
     for i, x in enumerate(indices):
@@ -353,6 +356,9 @@ def get_ranks(x, reverse=False):
 
     The reverse argument means that larger entries will come first
     (this is a "natural" ranking except that the first entry is 0)
+    
+    Reference:
+    https://codereview.stackexchange.com/questions/65031/creating-a-list-containing-the-rank-of-the-elements-in-the-original-list
     '''
     indices = sorted(range(len(x)), key=x.__getitem__, reverse=reverse)
     return unshuffle_indices(indices)
