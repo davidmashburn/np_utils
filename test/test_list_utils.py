@@ -108,6 +108,20 @@ def test_split_at_boundaries_1():
     s = split_at_boundaries([1,2,3,4,5,6,7,8,9], [2,5,6])
     assert s == [[1, 2], [3, 4, 5], [6], [7, 8, 9]]
 
+def test_unshuffle_indices():
+    #x = list(range(len(10)))
+    #random.seed(0)
+    #random.shuffle(x)
+    x = [7, 8, 1, 5, 3, 4, 2, 0, 9, 6]
+    y = [7, 2, 6, 4, 5, 3, 9, 0, 1, 8]
+    assert unshuffle_indices(x) == y
+    assert unshuffle_indices(y) == x
+
+def test_get_ranks():
+    x = [7, 8, 1, 5, 3, 4, 2, 0, 9, 6]
+    ranks = [7, 8, 1, 5, 3, 4, 2, 0, 9, 6]
+    assert get_ranks(x) == ranks
+
 def test_values_sorted_by_keys_1():
     assert list(values_sorted_by_keys({2: 'b', 1: 'a'}, key=None)) == ['a', 'b']
 
@@ -302,6 +316,8 @@ if __name__ == '__main__':
     test_split_list_on_condition_1()
     test_split_list_on_condition_2()
     test_split_list_on_condition_3()
+    test_unshuffle_indices()
+    test_get_ranks()
     test_split_at_boundaries_1()
     test_values_sorted_by_keys_1()
     test_values_sorted_by_keys_2()

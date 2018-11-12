@@ -320,6 +320,44 @@ def split_list_on_condition(l, cond):
         (true_list if cond(i) else false_list).append(i)
     return true_list, false_list
 
+# Indexing and Ranking:
+def unshuffle_indices(indices):
+    '''Get the index positions of a set of indices
+    
+    indices must be a shuffle of range(len(indices))
+    This is a lot like a key-value swap for a dict
+    
+    The algortihm is very simple so might speak for itself:
+    
+    unshuffled = [0] * len(indices)
+    for i, x in enumerate(indices):
+        unshuffled[x] = i
+    
+    Another thing to note is that this is an involution
+    (it is it's own inverse) so:
+    unshuffle_indices(unshuffle_indices(x)) == x
+    '''
+    unshuffled = [0] * len(indices)
+    for i, x in enumerate(indices):
+        unshuffled[x] = i
+    
+    return unshuffled
+
+def get_ranks(x, reverse=False):
+    '''Get the rank of items in a list
+
+    rank is a unique integer between 0 and len(x) - 1
+    and is in the same position as each entry in x
+
+    If you sort, the values and the ranks will still be lined up
+
+    The reverse argument means that larger entries will come first
+    (this is a "natural" ranking except that the first entry is 0)
+    '''
+    indices = sorted(range(len(x)), key=x.__getitem__, reverse=reverse)
+    return unshuffle_indices(indices)
+
+
 # Filtering:
 
 def deletecases(l,cases):
