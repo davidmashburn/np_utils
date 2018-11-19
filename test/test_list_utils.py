@@ -122,6 +122,11 @@ def test_get_ranks():
     ranks = [7, 8, 1, 5, 3, 4, 2, 0, 9, 6]
     assert get_ranks(x) == ranks
 
+def test_get_generator_ranks():
+    x = [7, 8, 1, 5, 3, 4, 2, 0, 9, 6]
+    ranks = [7, 8, 1, 5, 3, 4, 2, 0, 9, 6]
+    assert get_generator_ranks(len(x), (i for i in x)) == ranks
+
 def test_values_sorted_by_keys_1():
     assert list(values_sorted_by_keys({2: 'b', 1: 'a'}, key=None)) == ['a', 'b']
 
@@ -138,6 +143,19 @@ def test_rotate_list_of_dicts_1():
 
 def test_rotate_dict_of_lists_1():
     assert rotate_dict_of_lists(SAMPLE_DL_1) == SAMPLE_LD_1
+
+def test_append_rank_to_dict_of_lists_1():
+    test = {'a': [2], 'c': [1], 'b': [3]}
+    out = {'a': [2, 1], 'c': [1, 0], 'b': [3, 2]}
+    assert append_rank_to_dict_of_lists(test) == out
+    assert test == out
+
+def test_append_rank_to_dict_of_lists_2():
+    test = {'a': [2], 'c': [1], 'b': [3]}
+    out_rev = {'a': [2, 1], 'c': [1, 2], 'b': [3, 0]}
+    assert append_rank_to_dict_of_lists(test, reverse=True) == out_rev
+    assert test == out_rev
+
 
 def test_shallowAdd_1():
     assert shallowAdd([2, 3], [1, 1]) == [3, 4]
@@ -318,11 +336,14 @@ if __name__ == '__main__':
     test_split_list_on_condition_3()
     test_unshuffle_indices()
     test_get_ranks()
+    test_get_generator_ranks()
     test_split_at_boundaries_1()
     test_values_sorted_by_keys_1()
     test_values_sorted_by_keys_2()
     test_rotate_list_of_dicts_1()
     test_rotate_dict_of_lists_1()
+    test_append_rank_to_dict_of_lists_1()
+    test_append_rank_to_dict_of_lists_2()
     test_shallowAdd_1()
     test_shallowAdd_2()
     test_shallowAdd_3()

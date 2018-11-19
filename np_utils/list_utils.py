@@ -27,13 +27,15 @@ from __future__ import print_function
 from builtins import next, zip, map, str, range
 from past.builtins import basestring
 
+import sys
 from copy import deepcopy
 import operator
 from itertools import chain, islice
-from collections import Counter
+from collections import Counter, OrderedDict
 
 from future.utils import viewitems, lzip, lmap, lrange
 
+_DICT_IS_ORDERED = tuple(sys.version_info) >= (3, 6)
 
 #################################
 ## Nested structure conversion ##
@@ -346,6 +348,19 @@ def unshuffle_indices(indices):
     
     return unshuffled
 
+def argsort_list(x, *args, **kwds):
+    '''Like numpy argsort but for lists
+    '''
+    return sorted(range(len(x)), key=x.__getitem__, *args, **kwds)
+
+def argsort_generator(num_elements, generator, *args, **kwds):
+    '''Like numpy argsort but for generators
+    '''
+    gen_next = (generator.__next__
+                if hasattr(generator, '__next__') else
+                generator.next)
+    return sorted(range(num_elements), key=lambda x: gen_next(), *args, **kwds)
+
 def get_ranks(x, reverse=False):
     '''Get the rank of items in a list
 
@@ -360,7 +375,24 @@ def get_ranks(x, reverse=False):
     Reference:
     https://codereview.stackexchange.com/questions/65031/creating-a-list-containing-the-rank-of-the-elements-in-the-original-list
     '''
-    indices = sorted(range(len(x)), key=x.__getitem__, reverse=reverse)
+    indices = argsort_list(x, reverse=reverse)
+    return unshuffle_indices(indices)
+
+def get_generator_ranks(num_elements, generator, reverse=False):
+    '''Get the rank of items in a generator of length num_elements
+
+    rank is a unique integer between 0 and len(x) - 1
+    and is in the same position as each entry in x
+
+    If you sort, the values and the ranks will still be lined up
+
+    The reverse argument means that larger entries will come first
+    (this is a "natural" ranking except that the first entry is 0)
+    
+    Reference:
+    https://codereview.stackexchange.com/questions/65031/creating-a-list-containing-the-rank-of-the-elements-in-the-original-list
+    '''
+    indices = argsort_generator(num_elements, generator, reverse=reverse)
     return unshuffle_indices(indices)
 
 
@@ -541,6 +573,29 @@ def rotate_dict_of_lists(dl):
              for k, v in viewitems(dl)
              if i < len(v)}
             for i in range(num_dicts)]
+
+def _val_key(dict_item):
+    '''Return (value, key) for a dictionary item
+    ''' 
+    return dict_item[1], dict_item[0]
+
+def append_rank_to_dict_of_lists(d, keyfun=None, reverse=False):
+    '''For a dictionary of lists, find the ranking of the items and append each to that item's value
+    
+    Order is determined by a keyfun (default is (value, key))
+    
+    Updates the dict in place and also returns the modified version.
+    
+    In Python < 3.6, creates an OrderedDict instead and does not operate in-place
+    '''
+    d = d if _DICT_IS_ORDERED else OrderedDict(d)
+    keyfun = _val_key if keyfun is None else keyfun
+    ranks = get_generator_ranks(len(d), map(_val_key, d.items()), reverse=reverse)
+    for k, rank in zip(d.keys(), ranks):
+        d[k].append(rank)
+
+    d = d if _DICT_IS_ORDERED else dict(d)
+    return d
 
 def key_collector(x, collection=None):
     '''Recursively collect all the keys that a nested structure at all depths
