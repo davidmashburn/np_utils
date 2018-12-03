@@ -302,9 +302,10 @@ def doublewrap(f):
             return f(args[0]) # use the basic decorator pattern
         else:
             # decorator arguments
-            def realf(realf):
+            def newf(realf):
                 return f(realf, *args, **kwargs) # use the nested decorator pattern
-            return realf
+            
+            return newf
 
     return new_dec
 
