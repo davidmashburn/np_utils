@@ -590,7 +590,7 @@ def append_rank_to_dict_of_lists(d, keyfun=None, reverse=False):
     '''
     d = d if _DICT_IS_ORDERED else OrderedDict(d)
     keyfun = _val_key if keyfun is None else keyfun
-    ranks = get_generator_ranks(len(d), map(_val_key, d.items()), reverse=reverse)
+    ranks = get_generator_ranks(len(d), map(keyfun, d.items()), reverse=reverse)
     for k, rank in zip(d.keys(), ranks):
         d[k].append(rank)
 
