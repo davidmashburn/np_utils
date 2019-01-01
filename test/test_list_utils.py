@@ -127,6 +127,16 @@ def test_get_generator_ranks():
     ranks = [7, 8, 1, 5, 3, 4, 2, 0, 9, 6]
     assert get_generator_ranks(len(x), (i for i in x)) == ranks
 
+def test_group_by_first_elements():
+    input = [('A', 1, 4),
+             ('A', 2, 7),
+             ('B', 5, 9),
+             ('A', 0, 3),
+             ('B', 1, 1)]
+    output = {'A': [(1, 4), (2, 7), (0, 3)],
+              'B': (5, 9), (1, 1)]}
+    assert group_by_first_elements(input) == output
+
 def test_values_sorted_by_keys_1():
     assert list(values_sorted_by_keys({2: 'b', 1: 'a'}, key=None)) == ['a', 'b']
 
@@ -337,6 +347,7 @@ if __name__ == '__main__':
     test_unshuffle_indices()
     test_get_ranks()
     test_get_generator_ranks()
+    test_group_by_first_elements()
     test_split_at_boundaries_1()
     test_values_sorted_by_keys_1()
     test_values_sorted_by_keys_2()
