@@ -134,7 +134,7 @@ def test_group_by_first_elements():
              ('A', 0, 3),
              ('B', 1, 1)]
     output = {'A': [(1, 4), (2, 7), (0, 3)],
-              'B': (5, 9), (1, 1)]}
+              'B': [(5, 9), (1, 1)]}
     assert group_by_first_elements(input) == output
 
 def test_values_sorted_by_keys_1():
