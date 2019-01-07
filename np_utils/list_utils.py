@@ -459,6 +459,28 @@ def groupByFunction(l,f,appendFun=None):
         groupDict.setdefault(f(i),[]).append(appendFun(i) if appendFun else i)
     return groupDict
 
+def group_by_first_elements(iterable):
+    '''Group an iterable of lists or tuples and returns a dict of lists of lists or tuples.
+    Keys are the first value from each element in the iterable.
+    Values are lists of the remaining values from each elements in the iterable.
+    Example:
+        l = [('A', 1, 4),
+             ('A', 2, 7),
+             ('B', 5, 9),
+             ('A', 0, 3),
+             ('B', 1, 1)]
+        group_by_first_elements(l)
+        ->
+        {'A': [(1, 4), (2, 7), (0, 3)],
+         'B': (5, 9), (1, 1)]}
+    '''
+    result_dict = {}
+    for element in iterable:
+        first, rest = element[0], element[1:]
+        result_dict.setdefault(first, []).append(rest)
+    
+    return result_dict
+
 def getElementConnections(connectionSets):
     '''Take a list of connections and return a dictionary of connections to each element.
        Examples:
@@ -590,7 +612,7 @@ def append_rank_to_dict_of_lists(d, keyfun=None, reverse=False):
     '''
     d = d if _DICT_IS_ORDERED else OrderedDict(d)
     keyfun = _val_key if keyfun is None else keyfun
-    ranks = get_generator_ranks(len(d), map(_val_key, d.items()), reverse=reverse)
+    ranks = get_generator_ranks(len(d), map(keyfun, d.items()), reverse=reverse)
     for k, rank in zip(d.keys(), ranks):
         d[k].append(rank)
 
