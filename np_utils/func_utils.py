@@ -309,6 +309,28 @@ def doublewrap(f):
 
     return new_dec
 
+def doublewrap_class_method(f):
+    '''
+    a decorator decorator, allowing the decorator to be used as:
+    @decorator(with, arguments, and=kwargs)
+    or
+    @decorator
+    lifted from this StackOverflow answer:
+    http://stackoverflow.com/questions/653368/how-to-create-a-python-decorator-that-can-be-used-either-with-or-without-paramet
+    '''
+    @wraps(f)
+    def new_dec(self, *args, **kwargs):
+        if len(args) == 1 and len(kwargs) == 0 and callable(args[0]):
+            # actual decorated function
+            return f(self, args[0]) # use the basic decorator pattern
+        else:
+            # decorator arguments
+            def newf(realf):
+                return f(self, realf, *args, **kwargs) # use the nested decorator pattern
+            return newf
+
+    return new_dec
+
 def flipargs(f):
     '''Generator that changes a function to take its arguments in reverse'''
     @wraps(f)
