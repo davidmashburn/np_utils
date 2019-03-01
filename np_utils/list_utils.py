@@ -657,6 +657,9 @@ def directional_key_collector(x, collection=None, last_key='<TOP LEVEL>', skip_l
 
     return collection
 
+def get_index_by_value_mapping(iterable):
+    return {value: index for index, value in enumerate(iterable)}
+
 ##########################################
 ## Some utilities for nested structures ##
 ##########################################

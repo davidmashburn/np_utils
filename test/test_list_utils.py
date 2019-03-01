@@ -166,6 +166,9 @@ def test_append_rank_to_dict_of_lists_2():
     assert append_rank_to_dict_of_lists(test, reverse=True) == out_rev
     assert test == out_rev
 
+def test_get_index_by_value_mapping():
+    out = {4:0, 5:1, 6:2, 7:3}
+    assert out == get_index_by_value_mapping(range(4,8))
 
 def test_shallowAdd_1():
     assert shallowAdd([2, 3], [1, 1]) == [3, 4]
@@ -355,6 +358,7 @@ if __name__ == '__main__':
     test_rotate_dict_of_lists_1()
     test_append_rank_to_dict_of_lists_1()
     test_append_rank_to_dict_of_lists_2()
+    test_get_index_by_value_mapping()
     test_shallowAdd_1()
     test_shallowAdd_2()
     test_shallowAdd_3()
