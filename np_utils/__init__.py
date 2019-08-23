@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from .gen_utils import *
 from .func_utils import *
 from .list_utils import *
+from .fancy_indexing import *
 from .recarray_utils import *
 from .pyarray_utils import *
 from .np_utils import *
