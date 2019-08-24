@@ -21,7 +21,8 @@ from future.utils import lmap
 from copy import copy
 import numpy as np
 
-from .list_utils import totuple, flatten, getMostCommonVal, fL
+from .fancy_indexing import fL
+from .list_utils import totuple, flatten, getMostCommonVal
 
 # Thanks Wikipedia!!
 # A line-drawing algorithm by the pixel...

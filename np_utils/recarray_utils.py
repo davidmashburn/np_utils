@@ -45,8 +45,9 @@ from future.utils import lmap, lzip
 
 import numpy as np
 
+from .fancy_indexing import fL
 from .gen_utils import islistlike
-from .list_utils import split_at_boundaries, flatten, fL
+from .list_utils import split_at_boundaries, flatten
 
 def multi_where_1d(x, subx, skip_input_validation=False):
     '''Find the locations of a subset in the original array
