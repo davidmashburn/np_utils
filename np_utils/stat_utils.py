@@ -8,6 +8,9 @@ def gaussian_pdf(x, mu=0, sig=1, use_coeff=True):
     coeff = 1 / sig / np.sqrt(2. * np.pi) if use_coeff else 1
     return coeff * np.exp(-np.square(x - mu) / (2. * np.square(sig)))
 
+def _listify(x):
+    return x if hasattr(x, "__len__") else [x]
+
 def multi_random_normal(means, stds, counts, shuffle=True):
     '''Sample from multiple gaussian distributions.
 
