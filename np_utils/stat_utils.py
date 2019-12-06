@@ -11,7 +11,7 @@ def gaussian_pdf(x, mu=0, sig=1, use_coeff=True):
 def _listify(x):
     return x if hasattr(x, "__len__") else [x]
 
-def multi_random_normal(means, stds, counts, shuffle=True):
+def multi_random_normal(means, stds, counts, shuffle=True, random_state=np.random):
     '''Sample from multiple gaussian distributions.
 
        Takes 3 arrays (or lists, or singletons) for:
@@ -23,26 +23,28 @@ def multi_random_normal(means, stds, counts, shuffle=True):
 
        Returns a float array of length sum(counts)'''
     means, stds, counts = map(_listify, [means, stds, counts])  # Ensure lists
-    out = np.concatenate([np.random.normal(mean, std, count)
+    out = np.concatenate([random_state.normal(mean, std, count)
                           for mean, std, count in zip(means, stds, counts)])
     if shuffle:
-        np.random.shuffle(out)
+        random_state.shuffle(out)
 
     return out
 
-def uniformSphericalNoise(*shape):
+def uniformSphericalNoise(*shape, **kwds):
     '''Creates a uniform distributions within the volume of a hyper-sphere.
        (Implementats the Box-Mueller algorithm)
 
        The last element of shape is the number of dimensions of the hyper sphere'''
-    randDir = np.random.randn(*shape).T
+    random_state = kwds.pop("random_state", np.random)
+    randDir = random_state.randn(*shape).T
     normNoise = (randDir/np.sqrt(np.sum(randDir**2,axis=0))).T
-    return np.random.rand(shape[0],1)**(1./shape[-1])*normNoise
+    return random_state.rand(shape[0],1)**(1./shape[-1])*normNoise
 
-def _uniformCenteredNoise(*shape):
-    return np.random.rand(*shape)*2-1
+def _uniformCenteredNoise(*shape, **kwds):
+    random_state = kwds.pop("random_state", np.random)
+    return random_state.rand(*shape)*2-1
 
-def addNoise(points,scales=1,dist='gaussian'):
+def addNoise(points,scales=1,dist='gaussian', random_state=np.random):
     '''Adds noise to 2D in a variety of ways
        scales: either a single number or a list of numbers which
                multiply be each dimension separately
@@ -51,10 +53,10 @@ def addNoise(points,scales=1,dist='gaussian'):
              - gaussian uses np.random.randn
              - uniformradial uses the function uniformSphericalNoise
        '''
-    fun = { 'uniform'         : np.random.rand,
-            'gaussian'        : np.random.randn,
-            'uniformradial'   : uniformSphericalNoise,
-            'uniformcentered' : _uniformCenteredNoise,
+    fun = { 'uniform'         : random_state.rand,
+            'gaussian'        : random_state.randn,
+            'uniformradial'   : lambda *x: uniformSphericalNoise(*x, random_state=random_state),
+            'uniformcentered' : lambda *x: _uniformCenteredNoise(*x, random_state=random_state),
           }[dist]
     noisyPoints = np.array(points)
     noisyPoints += scales * fun(*noisyPoints.shape)
@@ -63,10 +65,10 @@ def addNoise(points,scales=1,dist='gaussian'):
 def pearson(x,y):
     return np.corrcoef(x,y)[0,1]
 
-def sample_weights(weights, num=1):
+def sample_weights(weights, num=1, random_state=np.random):
     '''Given a series of (normalized) weights,
        return a set of N randomly sampled indices'''
-    return np.searchsorted(np.cumsum(weights), np.random.random(num))
+    return np.searchsorted(np.cumsum(weights), random_state.random(num))
 
 def sample_from_buckets(buckets, weights, num=1):
     '''Given a grouping of buckets and weights, randomly select N buckets'''
