@@ -68,7 +68,7 @@ def pearson(x,y):
 def sample_weights(weights, num=1, random_state=np.random):
     '''Given a series of (normalized) weights,
        return a set of N randomly sampled indices'''
-    return np.searchsorted(np.cumsum(weights), random_state.random(num))
+    return np.searchsorted(np.cumsum(weights), random_state.random_sample(num))
 
 def sample_from_buckets(buckets, weights, num=1):
     '''Given a grouping of buckets and weights, randomly select N buckets'''
