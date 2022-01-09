@@ -115,7 +115,7 @@ def test_np_groupby_5():
 def test_group_transform_1():
     arr = _get_sample_rec_array()
     # Sort items based on 'o' in groups based on 'm':
-    sorted_o = group_transform(arr["m"], arr["o"], np.sort, np.float)
+    sorted_o = group_transform(arr["m"], arr["o"], np.sort, float)
     assert len(sorted_o) == len(arr)
     assert not np.array_equal(sorted_o, arr["o"])
     assert not np.array_equal(sorted_o, np.sort(arr["o"]))
@@ -126,7 +126,7 @@ def test_group_transform_2():
     arr = _get_sample_rec_array()
     # Rank items based on 'o' and 'p' in groups based on 'm':
     simple_rank = lambda x: np.argsort(x) + 1
-    ranked_op = group_transform(arr["m"], arr[["o", "p"]], simple_rank, np.int)
+    ranked_op = group_transform(arr["m"], arr[["o", "p"]], simple_rank, int)
     assert ranked_op.max() < len(arr)
 
 
@@ -134,12 +134,12 @@ def test_group_transform_3():
     arr = _get_sample_rec_array()
     # Subtract the group mean (background) for 'p' in groups based on 'm':
     background_subtract = lambda x: x - x.mean()
-    bg_removed_p = group_transform(arr["m"], arr["p"], background_subtract, np.float)
+    bg_removed_p = group_transform(arr["m"], arr["p"], background_subtract, float)
 
     # Normalize groups (divide by mean) for 'o' in groups based on 'm' and 'n':
     simple_normalize = lambda x: x / x.mean()
     normalized_o = group_transform(
-        arr[["m", "n"]], arr["o"], simple_normalize, np.float
+        arr[["m", "n"]], arr["o"], simple_normalize, float
     )
 
     assert not np.array_equal(bg_removed_p, background_subtract(arr["p"]))
@@ -207,20 +207,20 @@ def test_np_and_rec_groupby_full_1():
     n = np_groupby_full(
         arr[["m", "n"]],
         arr,
-        (lambda x: simple_rank(x["o"]), np.int),
-        (lambda x: simple_rank(x[["o", "p"]]), np.int),
-        (lambda x: background_subtract(x["o"]), np.float),
-        (lambda x: simple_normalize(x["p"]), np.float),
+        (lambda x: simple_rank(x["o"]), int),
+        (lambda x: simple_rank(x[["o", "p"]]), int),
+        (lambda x: background_subtract(x["o"]), float),
+        (lambda x: simple_normalize(x["p"]), float),
         names=["m", "n", "rank_o", "rank_op", "bg_sub_o", "norm_p"],
     )
 
     r = rec_groupby_full(
         arr,
         ["m", "n"],
-        (simple_rank, np.int, "o", "rank_o"),
-        (simple_rank, np.int, ["o", "p"], "rank_op"),
-        (background_subtract, np.float, "o", "bg_sub_o"),
-        (simple_normalize, np.float, "p", "norm_p"),
+        (simple_rank, int, "o", "rank_o"),
+        (simple_rank, int, ["o", "p"], "rank_op"),
+        (background_subtract, float, "o", "bg_sub_o"),
+        (simple_normalize, float, "p", "norm_p"),
     )
 
     assert np.array_equal(n, r)
@@ -235,10 +235,10 @@ def test_rec_groupby_full_2():
     r = rec_groupby_full(
         arr,
         ["m", "n"],
-        # (simple_rank,         np.int,   'o',        'rank_o'),
-        # (simple_rank,         np.int,   ['o', 'p'], 'rank_op'),
-        (background_subtract, np.float, "o", "bg_sub_o"),
-        (simple_normalize, np.float, "p", "norm_p"),
+        # (simple_rank,         int,   'o',        'rank_o'),
+        # (simple_rank,         int,   ['o', 'p'], 'rank_op'),
+        (background_subtract, float, "o", "bg_sub_o"),
+        (simple_normalize, float, "p", "norm_p"),
     )
     assert np.isclose(r["bg_sub_o"].mean(), 0)
     assert np.isclose(r["norm_p"].mean(), 1)
@@ -322,12 +322,12 @@ def test_cat_recarrays_1():
 
 
 def test_cartesian_records_1():
-    a = np.array([(1.0,), (2.0,), (3.0,)], dtype=[("a", np.float)])
-    b = np.array([(4,), (5,)], dtype=[("b", np.int)])
-    c = np.array([(6,), (7,)], dtype=[("c", np.int)])
+    a = np.array([(1.0,), (2.0,), (3.0,)], dtype=[("a", float)])
+    b = np.array([(4,), (5,)], dtype=[("b", int)])
+    c = np.array([(6,), (7,)], dtype=[("c", int)])
 
     r = cartesian_records([a, b, c])
-    expected_dtype = [("a", np.float), ("b", np.int), ("c", np.int)]
+    expected_dtype = [("a", float), ("b", int), ("c", int)]
     expected_result = np.array(
         [
             (1.0, 4, 6),
@@ -357,14 +357,14 @@ def test_rec_inner_join_on_one_input():
 
 def test_rec_inner_join_1():
     a = np.array(
-        [("x", 1.0), ("x", 2.0), ("y", 3.0)], dtype=[("s", "S20"), ("a", np.float)]
+        [("x", 1.0), ("x", 2.0), ("y", 3.0)], dtype=[("s", "S20"), ("a", float)]
     )
-    b = np.array([("x", 4), ("y", 5), ("x", 0)], dtype=[("s", "S20"), ("b", np.int)])
-    c = np.array([(6, "x"), (7, "y"), (9, "z")], dtype=[("c", np.int), ("s", "S20")])
+    b = np.array([("x", 4), ("y", 5), ("x", 0)], dtype=[("s", "S20"), ("b", int)])
+    c = np.array([(6, "x"), (7, "y"), (9, "z")], dtype=[("c", int), ("s", "S20")])
 
     r = rec_inner_join("s", a, b, c)
 
-    expected_dtype = [("s", "S20"), ("a", np.float), ("b", np.int), ("c", np.int)]
+    expected_dtype = [("s", "S20"), ("a", float), ("b", int), ("c", int)]
     expected_result = np.array(
         [
             ("x", 1.0, 4, 6),

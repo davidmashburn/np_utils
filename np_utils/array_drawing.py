@@ -88,7 +88,7 @@ def NDRectangle(start, end):
 
 def ImageCircle(r):
     """Create a binary image of a circle radius r"""
-    im = np.zeros([2 * r - 1] * 2, dtype=np.int)
+    im = np.zeros([2 * r - 1] * 2, dtype=int)
     r2 = r ** 2
     for i in range(2 * r - 1):
         for j in range(2 * r - 1):
@@ -101,7 +101,7 @@ def ImageCircle(r):
 
 def ImageSphere(r):
     """Create a binary image of a circle radius r"""
-    im = np.zeros([2 * r - 1] * 3, dtype=np.int)
+    im = np.zeros([2 * r - 1] * 3, dtype=int)
     r2 = r ** 2
     for i in range(2 * r - 1):
         for j in range(2 * r - 1):
@@ -383,7 +383,7 @@ def BresenhamTriangle(p0, p1, p2, doubleScan=True):  # Generalization for triang
 def _rounder(x):
     """Return the nearest int for x
     (where x can also be an array)"""
-    return np.round(x).astype(np.int)
+    return np.round(x).astype(int)
 
 
 def sample_points_from_plane(p, projected_pts, iscan, iline):

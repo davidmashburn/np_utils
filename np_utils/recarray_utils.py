@@ -176,7 +176,7 @@ def get_index_groups(arr):
     sort_arr = arr[sort_ind]
     isdiff, keys, split_points = _index_helper(arr, sort_arr)
     sorted_key_inds = np.cumsum(isdiff) - 1
-    inv = np.empty(arr.shape, dtype=np.intp)
+    inv = np.empty(arr.shape, dtype=int)
     inv[sort_ind] = sorted_key_inds
     index_groups = split_at_boundaries(np.argsort(inv), split_points)
     return keys, index_groups
@@ -283,19 +283,19 @@ def group_transform(keyarr, arr, fun, result_dtype):
     (assuming arr has fields 'm', 'n', 'o', 'p')
 
     # Sort items based on 'o' in groups based on 'm':
-    sorted_o = group_transform(arr['m'], arr['o'], np.sort, np.float)
+    sorted_o = group_transform(arr['m'], arr['o'], np.sort, float)
 
     # Rank items based on 'o' and 'p' in groups based on 'm':
     simple_rank = lambda x: np.argsort(x) + 1
-    ranked_op = group_transform(arr['m'], arr[['o', 'p']], simple_rank, np.int)
+    ranked_op = group_transform(arr['m'], arr[['o', 'p']], simple_rank, int)
 
     # Subtract the group mean (background) for 'p' in groups based on 'm':
     background_subtract = lambda x: x - x.mean()
-    bg_removed_p = group_transform(arr['m'], arr['p'], background_subtract, np.float)
+    bg_removed_p = group_transform(arr['m'], arr['p'], background_subtract, float)
 
     # Normalize groups (divide by mean) for 'o' in groups based on 'm' and 'n':
     simple_normalize = lambda x: x / x.mean()
-    normalized_o = group_transform(arr[['m', 'n']], arr['o'], simple_normalize, np.float)
+    normalized_o = group_transform(arr[['m', 'n']], arr['o'], simple_normalize, float)
     """
     keys, index_groups = get_index_groups(keyarr)
     return _group_transform(arr, index_groups, fun, result_dtype)
@@ -312,10 +312,10 @@ def np_groupby_full(keyarr, arr, *functions_result_dtypes, **kwds):
     simple_normalize = lambda x: x / x.mean()
 
     result = np_groupby_full(arr[['m', 'n']], arr,
-        (lambda x: simple_rank(x['o']), np.int),
-        (lambda x: simple_rank(x[['o', 'p']]), np.int),
-        (lambda x: background_subtract(x['o']), np.float),
-        (lambda x: simple_normalize(x['p']), np.float),
+        (lambda x: simple_rank(x['o']), int),
+        (lambda x: simple_rank(x[['o', 'p']]), int),
+        (lambda x: background_subtract(x['o']), float),
+        (lambda x: simple_normalize(x['p']), float),
         names=['m', 'n', 'rank_o', 'rank_op', 'bg_sub_o', 'norm_p'])
     """
     names = kwds.pop("names", None)
@@ -392,10 +392,10 @@ def rec_groupby_full(a, keynames, *fun_dtype_fields_name):
     simple_normalize = lambda x: x / x.mean()
 
     rec_groupby_full(a, ['m', 'n'],
-        (simple_rank,         np.int,   'o',        'rank_o'),
-        (simple_rank,         np.int,   ['o', 'p'], 'rank_op'),
-        (background_subtract, np.float, 'o',        'bg_sub_o'),
-        (simple_normalize,    np.float, 'p',        'norm_p')
+        (simple_rank,         int,   'o',        'rank_o'),
+        (simple_rank,         int,   ['o', 'p'], 'rank_op'),
+        (background_subtract, float, 'o',        'bg_sub_o'),
+        (simple_normalize,    float, 'p',        'norm_p')
     )
 
 
@@ -449,7 +449,7 @@ def true_where(shape, true_locs):
     true_where(bool_arr.shape, np.where(bool_arr)) == bool_arr
     or in general:
     np.where(true_where(arr.shape, np.where(arr))) == np.where(arr)"""
-    bool_arr = np.zeros(shape, dtype=np.bool)
+    bool_arr = np.zeros(shape, dtype=bool)
     bool_arr[true_locs] = True
     return bool_arr
 
@@ -584,9 +584,9 @@ def cartesian_records(arrays, out=None):
     containing cartesian products formed of input arrays.
 
     Example:
-    cartesian_records((np.array([1., 2., 3.], dtype=[('a', np.float)]),
-                       np.array([4, 5], dtype=[('b', np.int)]),
-                       np.array([6, 7], dtype=[('c', np.int)])))
+    cartesian_records((np.array([1., 2., 3.], dtype=[('a', float)]),
+                       np.array([4, 5], dtype=[('b', int)]),
+                       np.array([6, 7], dtype=[('c', int)])))
 
     np.array([(1., 4, 6),
               (1., 4, 7),
@@ -600,7 +600,7 @@ def cartesian_records(arrays, out=None):
               (3., 4, 7),
               (3., 5, 6),
               (3., 5, 7)],
-        dtype=[('a', np.float), ('b', np.int), ('c', np.int)])
+        dtype=[('a', float), ('b', int), ('c', int)])
 
     Original code by SO user, "pv."
     http://stackoverflow.com/questions/1208118/using-numpy-to-build-an-array-of-all-combinations-of-two-arrays
@@ -692,16 +692,16 @@ def rec_inner_join(keycols, *arr_list):
 
     Example:
     rec_inner_join('s',
-        np.array([('x', 1.), ('x', 2.), ('y', 3.)], dtype=[('s', 'S20'), ('a', np.float)]),
-        np.array([('x', 4), ('y', 5), ('x', 0)], dtype=[('s', 'S20'), ('b', np.int)]),
-        np.array([(6, 'x'), (7, 'y'), (9, 'z')], dtype=[('c', np.int), ('s', 'S20')]),)
+        np.array([('x', 1.), ('x', 2.), ('y', 3.)], dtype=[('s', 'S20'), ('a', float)]),
+        np.array([('x', 4), ('y', 5), ('x', 0)], dtype=[('s', 'S20'), ('b', int)]),
+        np.array([(6, 'x'), (7, 'y'), (9, 'z')], dtype=[('c', int), ('s', 'S20')]),)
      ->
     np.array([('x', 1., 4, 6),
               ('x', 1., 0, 6),
               ('x', 2., 4, 6),
               ('x', 2., 0, 6),
               ('y', 3., 5, 7),
-             ], dtype=[('s', 'S20'), ('a', np.float), ('b', np.int), ('c', np.int)])
+             ], dtype=[('s', 'S20'), ('a', float), ('b', int), ('c', int)])
     """
     keycols = keycols if islistlike(keycols) else [keycols]
 

@@ -244,7 +244,7 @@ def addBorder(arr, borderValue=0, borderThickness=1, axis=None):
     tArr = np.zeros(arr.ndim)
     tArr[allOrOne] = borderThickness
     # a new array stretched to accommodate the border; fill with border Value
-    arrNew = np.empty((2 * tArr + arr.shape).astype(np.int), dtype=arr.dtype)
+    arrNew = np.empty((2 * tArr + arr.shape).astype(int), dtype=arr.dtype)
     arrNew[:] = borderValue
     # a slice object that cuts out the new border
     if axis == None:
@@ -354,7 +354,7 @@ def reshape_repeating(arr, new_shape):
         return reshape_smaller(arr, new_shape)
     else:
         arr_flat = np.ravel(arr)
-        repeats = np.ceil(new_size / arr.size).astype(np.int)
+        repeats = np.ceil(new_size / arr.size).astype(int)
         s = np.lib.stride_tricks.as_strided(
             arr_flat, (repeats, arr.size), (0, arr.itemsize)
         )
@@ -383,7 +383,7 @@ def remove_duplicate_subarrays(arr):
 
 def limitInteriorPoints(l, numInteriorPoints, uniqueOnly=True):
     """return the list l with only the endpoints and a few interior points (uniqueOnly will duplicate if too few points)"""
-    inds = np.linspace(0, len(l) - 1, numInteriorPoints + 2).round().astype(np.integer)
+    inds = np.linspace(0, len(l) - 1, numInteriorPoints + 2).round().astype(int)
     if uniqueOnly:
         inds = np.unique(inds)
     return [l[i] for i in inds]
@@ -789,8 +789,8 @@ def FindOptimalScaleAndTranslationBetweenPointsAndReference(points, pointsRef):
 
     return the transformation parameters: a,(x0,y0,...)"""
     # Force to array of floats:
-    points = np.asarray(points, dtype=np.float)
-    pointsRef = np.asarray(pointsRef, dtype=np.float)
+    points = np.asarray(points, dtype=float)
+    pointsRef = np.asarray(pointsRef, dtype=float)
 
     # Compute some means:
     pm = points.mean(axis=0)
@@ -858,7 +858,7 @@ def box_list(l, box_shape=None):
     with shape optionally specified by box_shape"""
     box_shape = len(l) if box_shape is None else box_shape
     assert np.prod(box_shape) == len(l), "shape must match the length of l" ""
-    boxed = np.empty(box_shape, dtype=np.object)
+    boxed = np.empty(box_shape, dtype=object)
     boxed_flat = boxed.ravel()
     boxed_flat[:] = list(map(np.asanyarray, l))
     return boxed
