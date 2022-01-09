@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 '''Tests for some functions in np_utils.py. Use nose to run them.
    Fair warning, this is NOT an exhaustive suite.'''
-from __future__ import print_function, division
-from builtins import range
-from future.utils import lrange
-
 import numpy as np
 
 import np_utils
@@ -92,7 +88,7 @@ def test_limitInteriorPoints_r5_2_True():
     assert limitInteriorPoints(range(5),2,uniqueOnly=True) == [0,1,3,4]
 
 def test_limitInteriorPoints_r5_7_True():
-    assert limitInteriorPoints(range(5),7,uniqueOnly=True) == lrange(5)
+    assert limitInteriorPoints(range(5),7,uniqueOnly=True) == list(range(5))
 
 def test_limitInteriorPoints_r5_7_False():
     assert limitInteriorPoints(range(5),7,uniqueOnly=False) == [0,0,1,2,2,2,3,4,4]
@@ -175,7 +171,7 @@ def test_sliding_window_1():
                            .transpose(0,2,1,3))
 
 def test_interpNaNs_0nnn4_r5():
-    assert np.all(interpNaNs(np.array([0,np.nan,np.nan,np.nan,4]))==lrange(5))
+    assert np.all(interpNaNs(np.array([0,np.nan,np.nan,np.nan,4]))==list(range(5)))
 
 # A couple working but not-that-great interpolation functions:
 def interpNumpy_1345_half():
@@ -311,7 +307,7 @@ def test_apply_at_depth_1():
     np.array_equal(apply_at_depth(np.sum, a),
                    apply_at_depth_ravel(np.sum, a))
 
-    for depth in [0] + lrange(-4,4):
+    for depth in [0] + list(range(-4,4)):
         assert np.array_equal(apply_at_depth(np.sum, a, depth=depth),
                               apply_at_depth_ravel(np.sum, a, depth=depth))
     assert apply_at_depth(np.sum, a, depth=0) == np.sum(a)
@@ -324,7 +320,7 @@ def test_apply_at_depth_1():
     assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depth=0),
                           [[j - 1 for j in i]
                            for i in a])
-    for depth in [0] + lrange(-4,4):
+    for depth in [0] + list(range(-4,4)):
         assert np.array_equal(apply_at_depth(np.subtract, a, np.array([1]), depth=depth),
                               a - 1)
 

@@ -13,7 +13,7 @@ def test_nd_gradient_1():
     origin_val = 1
     stopvals = [5,7,11]
     a = nd_gradient(shape, origin_val, stopvals)
-    print a.shape
+    print(a.shape)
     assert a.shape == tuple(shape)
     assert a[0, 0, 0] == origin_val
     assert [a[-1, 0, 0], a[0, -1, 0], a[0, 0, -1]] == stopvals

@@ -1,7 +1,3 @@
-from __future__ import print_function
-from builtins import map
-from future.utils import lmap
-
 import np_utils
 from np_utils import *
 
@@ -11,14 +7,14 @@ increment = lambda x: x + 1
 def test_mapf():
     x = [1,2,3]
     y = [4,5,6]
-    assert list(mapf(increment)(x)) == lmap(increment, x)
-    assert list(mapf(add)(x, y)) == lmap(add, x, y)
+    assert list(mapf(increment)(x)) == list(map(increment, x))
+    assert list(mapf(add)(x, y)) == list(map(add, x, y))
 
 def test_lmapf():
     x = [1,2,3]
     y = [4,5,6]
-    assert lmapf(increment)(x) == lmap(increment, x)
-    assert lmapf(add)(x, y) == lmap(add, x, y)
+    assert lmapf(increment)(x) == list(map(increment, x))
+    assert lmapf(add)(x, y) == list(map(add, x, y))
 
 def test_mapd():
     d = {1:2, 2:3, 3:4}

@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from .gen_utils import *
 from .func_utils import *
 from .list_utils import *

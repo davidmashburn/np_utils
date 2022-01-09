@@ -13,11 +13,6 @@
    The drawing functions only use integer arithmetic and return a
    list of the coordinates that can be used as array indices
    '''
-from __future__ import absolute_import
-from __future__ import division
-from builtins import zip, map, range
-from future.utils import lmap
-
 from copy import copy
 import numpy as np
 
@@ -116,10 +111,10 @@ def blitCircleToArray(arr,x,y,r,val):
     yL,yH = np.clip(y-r+1,0,arr.shape[1]), np.clip(y+r,0,arr.shape[1])
     xcL,xcH = xL-(x-r+1), 2*r-1 + xH-(x+r)
     ycL,ycH = yL-(y-r+1), 2*r-1 + yH-(y+r)
-    #print (xL,xH,yL,yH),(xcL,xcH,ycL,ycH)
-    #print xH-xL,yH-yL,xcH-xcL,ycH-ycL
+    #print((xL,xH,yL,yH),(xcL,xcH,ycL,ycH))
+    #print(xH-xL,yH-yL,xcH-xcL,ycH-ycL)
     c=ImageCircle(r)[xcL:xcH,ycL:ycH]
-    #print arr[xL:xH,yL:yH].shape,c.shape
+    #print(arr[xL:xH,yL:yH].shape,c.shape)
     arr[xL:xH,yL:yH] *= (1-c)
     arr[xL:xH,yL:yH] += (val*c)
 
@@ -132,10 +127,10 @@ def blitSphereToArray(arr,x,y,z,r,val):
     ycL,ycH = yL-(y-r+1), 2*r-1 + yH-(y+r)
     zcL,zcH = zL-(z-r+1), 2*r-1 + zH-(z+r)
 
-    #print (xL,xH,yL,yH),(xcL,xcH,ycL,ycH)
-    #print xH-xL,yH-yL,xcH-xcL,ycH-ycL
+    #print((xL,xH,yL,yH),(xcL,xcH,ycL,ycH))
+    #print(xH-xL,yH-yL,xcH-xcL,ycH-ycL)
     c=ImageSphere(r)[xcL:xcH,ycL:ycH,zcL:zcH]
-    #print arr[xL:xH,yL:yH].shape,c.shape
+    #print(arr[xL:xH,yL:yH].shape,c.shape)
     arr[xL:xH,yL:yH,zL:zH] *= (1-c)
     arr[xL:xH,yL:yH,zL:zH] += (val*c)
 
@@ -143,7 +138,7 @@ def blitSphereToArray(arr,x,y,z,r,val):
 ##                       Gradient Drawing                             ##
 ########################################################################
 def nd_gradient(shape, origin_val, stopvals):
-    grids = np.mgrid.__getitem__(lmap(slice, shape))
+    grids = np.mgrid.__getitem__(list(map(slice, shape)))
     ortho_grads = [g * (stop - origin_val) / (s - 1)
                    for s, stop, g in zip(shape, stopvals, grids)]
     return origin_val + sum(ortho_grads)
@@ -151,7 +146,7 @@ def nd_gradient(shape, origin_val, stopvals):
 def nd_radial_gradient(shape, offsets=None):
     if offsets is None: 
         offsets = [0] * len(shape)
-    grids = np.mgrid.__getitem__(lmap(slice, shape))
+    grids = np.mgrid.__getitem__(list(map(slice, shape)))
     v = [(g + off + 0.5 - s / 2) ** 2
          for s, off, g in zip(shape, offsets, grids)]
     return np.sqrt(np.sum(v, axis=0))

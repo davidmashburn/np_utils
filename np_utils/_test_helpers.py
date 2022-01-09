@@ -1,7 +1,4 @@
 '''Helper functions for use in tests of the other sub-modules'''
-from __future__ import print_function
-from builtins import zip
-
 import numpy as np
 
 cache = {}

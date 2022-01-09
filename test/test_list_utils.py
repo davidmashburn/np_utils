@@ -1,10 +1,7 @@
-from builtins import range
-from future.utils import lrange
-
 import np_utils
 from np_utils import *
 
-TEST_SET = lrange(10)
+TEST_SET = list(range(10))
 
 SAMPLE_LD_1 = [{'a': 1, 'b': 2, 'c': 3},
                {'a': 2, 'b': 4, 'c': 6},
@@ -98,7 +95,7 @@ def test_split_list_on_condition_1():
     assert split_list_on_condition(TEST_SET, lambda x: x % 2 == 0) == ([0, 2, 4, 6, 8], [1, 3, 5, 7, 9])
 
 def test_split_list_on_condition_2():
-    assert split_list_on_condition(TEST_SET, False) == ([], lrange(10))
+    assert split_list_on_condition(TEST_SET, False) == ([], list(range(10)))
 
 def test_split_list_on_condition_3():
     manual = [0, 0, 0, 1, 0, 0, 1, 1, 1, 0]

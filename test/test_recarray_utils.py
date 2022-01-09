@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 '''Tests for some functions in recarray_utils.py. Use nose to run them.
    Fair warning, this is NOT an exhaustive suite.'''
-from __future__ import print_function, division
-
-from builtins import zip
-from future.utils import lrange
-
 import numpy as np
 
 import np_utils
@@ -38,7 +33,7 @@ def test_multi_where_1d_2():
 def test_true_where_1():
     assert np.array_equal(true_where(4, [0, 2]),
                           [1, 0, 1, 0])
-    assert np.array_equal(true_where([4] * 2, [lrange(4)] * 2),
+    assert np.array_equal(true_where([4] * 2, [list(range(4))] * 2),
                           np.eye(4))
 
 def test_true_where_2():

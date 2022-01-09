@@ -1,7 +1,5 @@
 """Basic utilities to support conversion between array.array <-> numpy.array
 """
-from __future__ import print_function
-
 import array
 
 import numpy as np

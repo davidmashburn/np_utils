@@ -1,6 +1,4 @@
 '''Utilities for noise generation and statistics by David Mashburn'''
-from __future__ import division
-
 import numpy as np
 
 def gaussian_pdf(x, mu=0, sig=1, use_coeff=True):

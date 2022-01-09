@@ -76,13 +76,6 @@ apply_at_depth ->
     Also works for functions with multiple arguments (different depths per argument)
 '''
 
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-from builtins import str, map, zip, range
-
-from future.utils import lmap, lrange
-
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
@@ -380,7 +373,7 @@ def cartesian(arrays, out=None):
        http://stackoverflow.com/questions/1208118/using-numpy-to-build-an-array-of-all-combinations-of-two-arrays
        '''
 
-    arrays = lmap(np.asarray, arrays)
+    arrays = list(map(np.asarray, arrays))
     dtype = arrays[0].dtype
 
     n = np.prod([x.size for x in arrays])
@@ -489,7 +482,7 @@ def sliding_window(a, ws, ss=None, flatten=True):
     firstdim = (np.product(newshape[:-meat]),) if ws.shape else ()
     dim = firstdim + (newshape[-meat:])
     # remove any dimensions with size 1
-    dim = filter(lambda i : i != 1,dim)
+    dim = list(filter(lambda i : i != 1,dim))
     return strided.reshape(dim)
 
 ##################################
@@ -769,7 +762,7 @@ def box_list(l, box_shape=None):
     assert np.prod(box_shape) == len(l), 'shape must match the length of l'''
     boxed = np.empty(box_shape, dtype=np.object)
     boxed_flat = boxed.ravel()
-    boxed_flat[:] = lmap(np.asanyarray, l)
+    boxed_flat[:] = list(map(np.asanyarray, l))
     return boxed
 
 def box(arr, depth=0):
@@ -799,7 +792,7 @@ def is_boxed(a):
 def _broadcast_arr_list(l, reverse=False):
     '''Helper function to broadcast all elements in a list to arrays with a common shape
        Uses broadcast_arrays unless there is only one box'''
-    arr_list = lmap(np.asanyarray, l)
+    arr_list = list(map(np.asanyarray, l))
     broadcast = (reverse_broadcast(broadcast_arrays) if reverse else
                  broadcast_arrays)
     return (broadcast(*arr_list)
@@ -841,7 +834,7 @@ def map_along_axis(f, arr, axis):
     '''
     arr = np.asanyarray(arr)
     axis = axis + arr.ndim if axis < 0 else axis
-    new_dim_order = [axis] + lrange(axis) + lrange(axis+1, arr.ndim)
+    new_dim_order = [axis] + list(range(axis)) + list(range(axis+1, arr.ndim))
     return np.array([f(a) for a in arr.transpose(new_dim_order)])
 
 def apply_at_depth_ravel(f, arr, depth=0):
@@ -934,11 +927,11 @@ def apply_at_depth(f, *args, **kwds):
     depths = (depths if hasattr(depths, '__len__') else
               [depths] * len(args))
     assert len(args) == len(depths)
-    boxed_list = lmap(box, args, depths)
+    boxed_list = list(map(box, args, depths))
     bbl = _broadcast_arr_list(boxed_list)
     bb_shape = box_shape(bbl[0])
-    bbl_flat = lmap(np.ravel, bbl)
-    results = lmap(f, *bbl_flat)
+    bbl_flat = list(map(np.ravel, bbl))
+    results = list(map(f, *bbl_flat))
     results = (results if not broadcast_results else
                _broadcast_arr_list(results))
     arr = np.array(results)

@@ -35,14 +35,6 @@ is_first_occurrence_1d, get_first_indices ->
     Functions to determine the first occurrence (index)
     of each unique value in an array (ND or 1D)
 '''
-
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import
-
-from builtins import map, zip
-from future.utils import lmap, lzip
-
 import numpy as np
 
 from .fancy_indexing import fL
@@ -414,7 +406,7 @@ def find_first_occurrence_1d(arr, get_keys=True):
     '''Equivalent to find_first_occurrence(arr.ravel()), but should be much faster
        (uses the very fast get_index_groups function)'''
     keys, index_groups = get_index_groups(arr)
-    first_occurrences = lmap(np.min, index_groups)
+    first_occurrences = list(map(np.min, index_groups))
     return (keys, first_occurrences) if get_keys else first_occurrences
 
 def true_where(shape, true_locs):
@@ -451,7 +443,7 @@ def get_first_indices(arr, values, missing=None):
     arr = np.asanyarray(arr)
 
     first_inds = dict(zip(*find_first_occurrence_1d(arr)))
-    inds = lmap(first_inds.get, values)
+    inds = list(map(first_inds.get, values))
 
     if missing == 'fail' and None in inds:
         raise Exception('Value Error! One of the values is not in arr')
@@ -576,7 +568,7 @@ def cartesian_records(arrays, out=None):
        http://stackoverflow.com/questions/1208118/using-numpy-to-build-an-array-of-all-combinations-of-two-arrays
        '''
 
-    arrays = lmap(np.asanyarray, arrays)
+    arrays = list(map(np.asanyarray, arrays))
     output_length = np.prod([x.size for x in arrays])
 
     names_list = [a.dtype.names for a in arrays]
@@ -585,7 +577,7 @@ def cartesian_records(arrays, out=None):
     other_names = flatten(rest_names_list)
 
     if out is None:
-        dtypes_list = lmap(get_rec_dtypes, arrays)
+        dtypes_list = list(map(get_rec_dtypes, arrays))
 
         assert all(names_list), 'All arrays must be record arrays!'
         output_dtype = [(n, d) for names, dtypes in zip(names_list, dtypes_list)
@@ -616,8 +608,8 @@ def _rec_inner_join_helper(keycols, arr_list):
     #    raise Exception(msg.format(jointype))
 
     names_list = [a.dtype.names for a in arr_list]
-    dtypes_list = lmap(get_rec_dtypes, arr_list)
-    names_and_dtypes_list = [lzip(names, dtypes)
+    dtypes_list = list(map(get_rec_dtypes, arr_list))
+    names_and_dtypes_list = [list(zip(names, dtypes))
                              for names, dtypes in zip(names_list, dtypes_list)]
     _nd_dict = dict(zip(names_list[0], dtypes_list[0]))
     key_dtypes = [_nd_dict[name] for name in keycols]
@@ -628,7 +620,7 @@ def _rec_inner_join_helper(keycols, arr_list):
 
     non_key_col_names = fL(non_key_names_and_dtypes)[:, :, 0]
     non_key_dtypes = fL(non_key_names_and_dtypes)[:, :, 1]
-    output_dtype = lzip(keycols, key_dtypes) + flatten(non_key_names_and_dtypes)
+    output_dtype = list(zip(keycols, key_dtypes)) + flatten(non_key_names_and_dtypes)
 
     # Assertions to ensure bad things can't happen:
     msg = 'Each input array must have all the keycols'
@@ -674,7 +666,7 @@ def rec_inner_join(keycols, *arr_list):
     index_groups_dict_list = []
     for arr in arr_list:
         k, ig = get_index_groups(arr[keycols])
-        key = lmap(tuple, k)
+        key = list(map(tuple, k))
         keys_list.append(key)
         index_groups_dict_list.append(dict(zip(key, ig)))
 
@@ -693,7 +685,7 @@ def rec_inner_join(keycols, *arr_list):
     #         keys_use = [k for k in keys_use
     #                       if k in set(keys)]
     # elif jointype == 'outer':
-    #     keys_set = lmap(set, keys_list)
+    #     keys_set = list(map(set, keys_list))
     #     keys_use_set = set(keys_use)
     #     for keys in keys_list[1:]:
     #         for k in keys:

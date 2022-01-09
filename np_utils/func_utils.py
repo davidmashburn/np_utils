@@ -10,12 +10,8 @@ Functions that generate functions:
     fork -> J language style hierarchical function combination
     constf -> make a function that always returns the same value
 '''
-from builtins import map
-
 from functools import wraps
 import inspect
-
-from future.utils import viewitems, lmap
 
 def identity(x):
     '''Identity function; just returns the argument'''
@@ -33,15 +29,15 @@ def mapf(f):
     return lambda *args: map(f, *args)
 
 def lmapf(f):
-    '''Just the functional form of lmap:
-       lmapf(f)(x) <--> lmap(f,x)'''
-    return lambda *args: lmap(f, *args)
+    '''Just the functional form of list(map(*)):
+       lmapf(f)(x) <--> list(map(f,x))'''
+    return lambda *args: list(map(f, *args))
 
 def mapd(f, d, *extra_args, **kwds):
     '''Map a function over dictionary values.
        Keys remain the same in the output'''
     return {k: f(v, *extra_args, **kwds)
-            for k, v in viewitems(d)}
+            for k, v in d.items()}
 
 def map_in_place(f, l, *extra_args, **kwds):
     '''Mutating version of map that can only take a single argument
@@ -56,7 +52,7 @@ def mapd_in_place(f, d, *extra_args, **kwds):
     '''Mutating version of mapd
        Returns modified version of original dict
        All optional arguments are passed to f'''
-    for k, v in viewitems(d):
+    for k, v in d.items():
         d[k] = f(v, *extra_args, **kwds)
 
     return d

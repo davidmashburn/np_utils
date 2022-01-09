@@ -23,17 +23,11 @@ fancyIndexingListM1 (alias fLm1) -> like fL, but subtracts 1 from all indices re
 There are other functions here as well, but these are the most useful/novel
 '''
 
-from __future__ import print_function
-from builtins import next, zip, map, str, range
-from past.builtins import basestring
-
 import sys
 from copy import deepcopy
 import operator
 from itertools import chain, islice
 from collections import Counter, OrderedDict
-
-from future.utils import viewitems, lzip, lmap, lrange
 
 _DICT_IS_ORDERED = tuple(sys.version_info) >= (3, 6)
 
@@ -56,7 +50,7 @@ def totuple(a, break_strings=True):
 
        totuple is especially effective for creating hashable structures
        for use in dict and set'''
-    if isinstance(a, basestring) and (len(a) == 1 or not break_strings):
+    if isinstance(a, (bytes, str)) and (len(a) == 1 or not break_strings):
         return a
     try:
         return tuple(totuple(i, break_strings) for i in a)
@@ -71,7 +65,7 @@ def makeTuple(a, break_strings=True):
 def tolist(a, break_strings=True):
     '''Makes lists out of nested datastructures like tuples, lists, and arrays.
        Based on totuple, see docs for more information.'''
-    if isinstance(a, basestring) and (len(a) == 1 or not break_strings):
+    if isinstance(a, (bytes, str)) and (len(a) == 1 or not break_strings):
         return a
     try:
         return [tolist(i, break_strings) for i in a]
@@ -83,7 +77,7 @@ def iterToX(f, iterable, break_strings=True):
        Replace all iterables in a nested structure with another type (X) using
        the constructor function "f".
        "f" must take an iterable as it's argument.'''
-    if isinstance(iterable, basestring) and (len(iterable) == 1 or not break_strings):
+    if isinstance(iterable, (bytes, str)) and (len(iterable) == 1 or not break_strings):
         return iterable
     try:
         return f([iterToX(f, i, break_strings) for i in iterable])
@@ -95,7 +89,7 @@ def iterToX_splat(f, iterable, break_strings=True):
        Replace all iterables in a nested structure with another type using
        the constructor function "f" that takes multiple arguments.
        "f" must take multiple arguments, like sympy.Tuple, for example.'''
-    if isinstance(iterable, basestring) and (len(iterable) == 1 or not break_strings):
+    if isinstance(iterable, (bytes, str)) and (len(iterable) == 1 or not break_strings):
         return iterable
     try:
         return f(*[iterToX_splat(f, i, break_strings) for i in iterable])
@@ -204,7 +198,7 @@ def zipflat(*args):
 def ziptranspose(l):
     '''Tranpose the two outer dimensions of a nest list
        (This is just a wrapper around zip(*l) that returns a list)'''
-    return lzip(*l)
+    return list(zip(*l))
 
 def partition_range(x, n):
     '''Return a generator for a series of chunked ranges that end at x
@@ -235,9 +229,9 @@ def zipIntoPairs(l,cycle=False,offset=1):
        If cycle is True, pair the end and beginning as well
        If offset is greater than 1, pair separated elements'''
     if cycle:
-        return lzip(l,roll(l,-offset))
+        return list(zip(l,roll(l,-offset)))
     else:
-        return lzip(l[:-offset],l[offset:])
+        return list(zip(l[:-offset],l[offset:]))
 
 def intersperse(l,separator):
     '''Intersperse a separator between all items
@@ -446,12 +440,11 @@ def groupByFunction(l,f,appendFun=None):
 
        Another simple way to acheive this would be using itertools.groupby:
 
-       from future.utils import lmap
        from itertools import groupby
        if appendFun==None:
            return {k: list(v) for k, v in groupby(l,f)}
        else:
-           return {k: lmap(appendFun, v) for k, v in groupby(l,f)}
+           return {k: list(map(appendFun, v)) for k, v in groupby(l,f)}
        I may change this in a future version after testing it more.
        '''
     groupDict = {}
@@ -527,12 +520,12 @@ def getChainsFromConnections(connections,checkConnections=True):
        '''
     connections = deepcopy(connections) # Protect the input from modification
     if checkConnections: # Check that there is no branching
-        assert all( len(v)<3 for k,v in viewitems(connections) ), 'Aborting; this network has branching'
+        assert all( len(v)<3 for k,v in connections.items() ), 'Aborting; this network has branching'
 
     chains = []
     while len(connections): # loop over possible chains
         # Pick a starting point (an end point if possible)
-        currPt = _firstOrOther([pt for pt,conn in viewitems(connections)
+        currPt = _firstOrOther([pt for pt,conn in connections.items()
                                    if len(conn)==1],
                                next(iter(connections))) # was connections.keys()[0]
         # Form a chain and move the current point forward
@@ -562,7 +555,7 @@ def interp(l,index):
 #####################################
 
 def dict_apply(f, d):
-    return {k: f(v) for k, v in viewitems(d)}
+    return {k: f(v) for k, v in d.items()}
 
 def dict_key_union(dicts):
     '''Form the superset (union) of all keys in all dictionaries'''
@@ -592,7 +585,7 @@ def rotate_dict_of_lists(dl):
        Skips entries for shorter lists'''
     num_dicts = max(map(len, dl.values()))
     return [{k: v[i]
-             for k, v in viewitems(dl)
+             for k, v in dl.items()
              if i < len(v)}
             for i in range(num_dicts)]
 

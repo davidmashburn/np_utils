@@ -1,6 +1,3 @@
-from __future__ import absolute_import
-from __future__ import division
-from builtins import range
 import numpy as np
 
 from .np_utils import partitionNumpy, map_along_axis
@@ -18,11 +15,11 @@ def _quick_fft(a, chunk_size):
 #     import time
 #     t = time.time()
 #     ff = project_herschel.audio_video.rolling_fft(a, framerate//10) # 100 ms
-#     print time.time()-t
+#     print(time.time()-t)
 #   0.583346843719
 #     t = time.time()
 #     ff = project_herschel.audio_video.rolling_fft(a, framerate//10, 1) # 100 ms
-#     print time.time()-t
+#     print(time.time()-t)
 #   2.62382698059
 def _smooth_fft(a, chunk_size, smoothing_factor=4):
     '''Run fft's over multiple sections of a signal.

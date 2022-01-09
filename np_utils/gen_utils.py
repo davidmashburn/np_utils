@@ -13,9 +13,6 @@ Flow control utilities:
                         2 maixima and returns the global min and max
                         using callFunctionIfNotNone
 '''
-from builtins import map, int
-
-
 import os
 import types
 import re
@@ -109,7 +106,7 @@ def multiremove(text, *removals):
 def minmax(*args,**kwds):
     '''A really simple function that makes it cleaner to get the min and max
        from an expression without duplication or creating a local variable.
-       See builtins min and max for details about arguments.'''
+       See min and max for details about arguments.'''
     return min(*args,**kwds),max(*args,**kwds)
 
 def callFunctionIfNotNone(f,a,b):
