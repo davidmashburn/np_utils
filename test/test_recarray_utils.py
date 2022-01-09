@@ -138,9 +138,7 @@ def test_group_transform_3():
 
     # Normalize groups (divide by mean) for 'o' in groups based on 'm' and 'n':
     simple_normalize = lambda x: x / x.mean()
-    normalized_o = group_transform(
-        arr[["m", "n"]], arr["o"], simple_normalize, float
-    )
+    normalized_o = group_transform(arr[["m", "n"]], arr["o"], simple_normalize, float)
 
     assert not np.array_equal(bg_removed_p, background_subtract(arr["p"]))
     assert np.isclose(np.mean(bg_removed_p), 0)
