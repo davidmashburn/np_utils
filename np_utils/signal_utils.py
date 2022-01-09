@@ -5,9 +5,10 @@ from .np_utils import partitionNumpy, map_along_axis
 # This faster, but more memory-heavy than it needs to be:
 # (aka, np.fromiter could be lower resource, but eh...)
 def _quick_fft(a, chunk_size):
-    '''Partion an array into chunks of a certain size and run fft's on
-       each chunk'''
+    """Partion an array into chunks of a certain size and run fft's on
+    each chunk"""
     return np.fft.fft(partitionNumpy(a, chunk_size))
+
 
 # This is slower, but more flexible and COULD be more memery conscious
 # by using np.fromiter
@@ -22,22 +23,22 @@ def _quick_fft(a, chunk_size):
 #     print(time.time()-t)
 #   2.62382698059
 def _smooth_fft(a, chunk_size, smoothing_factor=4):
-    '''Run fft's over multiple sections of a signal.
-       chunk_size is the number of samples to include in each fft
-       smoothing factor increases the number of samples multiplicatively
-       (must me an integer >=1)'''
+    """Run fft's over multiple sections of a signal.
+    chunk_size is the number of samples to include in each fft
+    smoothing factor increases the number of samples multiplicatively
+    (must me an integer >=1)"""
     n, c = len(a), chunk_size
     cs = c // smoothing_factor
-    return np.array([np.fft.fft(a[i:i + c])
-                     for i in range(0, n, cs)
-                     if i + c <= n])
+    return np.array([np.fft.fft(a[i : i + c]) for i in range(0, n, cs) if i + c <= n])
+
 
 def rolling_fft(a, chunk_size=10000, smoothing_factor=None):
-    '''Return the amplitude of the chunked fft over an array
-       using either _quick_fft or _smooth_fft
-       Essentially returns a spectrogram'''
+    """Return the amplitude of the chunked fft over an array
+    using either _quick_fft or _smooth_fft
+    Essentially returns a spectrogram"""
     _fft = _quick_fft if smoothing_factor is None else _smooth_fft
     return np.absolute(_fft(a, chunk_size))
+
 
 def entropy(arr, axis=None, handle_non_integers=True):
     """Computes the Shannon entropy of the elements of A. Assumes A is
@@ -70,7 +71,7 @@ def entropy(arr, axis=None, handle_non_integers=True):
     Modified version of this StackOverflow post, answer by "Dave":
     http://stackoverflow.com/questions/15450192/fastest-way-to-compute-entropy-in-python"""
     if arr is None or len(arr) < 2:
-        return 0.
+        return 0.0
 
     arr = np.asanyarray(arr)
 
@@ -80,11 +81,11 @@ def entropy(arr, axis=None, handle_non_integers=True):
             # Replace values in arr with compacted integers:
             _, arr = np.unique(arr, return_inverse=True)
 
-        _counts = np.bincount(arr) # needs small, non-negative ints
+        _counts = np.bincount(arr)  # needs small, non-negative ints
         counts = _counts[_counts > 0]
 
         if len(counts) == 1:
-            return 0. # avoid returning -0.0 to prevent weird doctests
+            return 0.0  # avoid returning -0.0 to prevent weird doctests
         probs = counts / float(arr.size)
         return -np.sum(probs * np.log2(probs))
     else:

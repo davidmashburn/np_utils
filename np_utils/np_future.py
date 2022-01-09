@@ -5,6 +5,7 @@ import numpy as np
 
 from numpy import asanyarray, newaxis
 
+
 def stack(arrays, axis=0):
     """
     Join a sequence of arrays along a new axis.
@@ -47,15 +48,15 @@ def stack(arrays, axis=0):
     """
     arrays = [asanyarray(arr) for arr in arrays]
     if not arrays:
-        raise ValueError('need at least one array to stack')
+        raise ValueError("need at least one array to stack")
 
     shapes = set(arr.shape for arr in arrays)
     if len(shapes) != 1:
-        raise ValueError('all input arrays must have the same shape')
+        raise ValueError("all input arrays must have the same shape")
 
     result_ndim = arrays[0].ndim + 1
     if not -result_ndim <= axis < result_ndim:
-        msg = 'axis {0} out of bounds [-{1}, {1})'.format(axis, result_ndim)
+        msg = "axis {0} out of bounds [-{1}, {1})".format(axis, result_ndim)
         raise IndexError(msg)
     if axis < 0:
         axis += result_ndim
@@ -64,9 +65,11 @@ def stack(arrays, axis=0):
     expanded_arrays = [arr[sl] for arr in arrays]
     return _nx.concatenate(expanded_arrays, axis=axis)
 
+
 #######################
 ## stride_tricks.py: ##
 #######################
+
 
 def _maybe_view_as_subclass(original_array, new_array):
     if type(original_array) is not type(new_array):
@@ -80,20 +83,24 @@ def _maybe_view_as_subclass(original_array, new_array):
             new_array.__array_finalize__(original_array)
     return new_array
 
+
 def _broadcast_to(array, shape, subok, readonly):
     shape = tuple(shape) if np.iterable(shape) else (shape,)
     array = np.array(array, copy=False, subok=subok)
     if not shape and array.shape:
-        raise ValueError('cannot broadcast a non-scalar to a scalar array')
+        raise ValueError("cannot broadcast a non-scalar to a scalar array")
     if any(size < 0 for size in shape):
-        raise ValueError('all elements of broadcast shape must be non-'
-                         'negative')
+        raise ValueError("all elements of broadcast shape must be non-" "negative")
     needs_writeable = not readonly and array.flags.writeable
-    extras = ['reduce_ok'] if needs_writeable else []
-    op_flag = 'readwrite' if needs_writeable else 'readonly'
+    extras = ["reduce_ok"] if needs_writeable else []
+    op_flag = "readwrite" if needs_writeable else "readonly"
     broadcast = np.nditer(
-        (array,), flags=['multi_index', 'refs_ok', 'zerosize_ok'] + extras,
-        op_flags=[op_flag], itershape=shape, order='C').itviews[0]
+        (array,),
+        flags=["multi_index", "refs_ok", "zerosize_ok"] + extras,
+        op_flags=[op_flag],
+        itershape=shape,
+        order="C",
+    ).itviews[0]
     result = _maybe_view_as_subclass(array, broadcast)
     if needs_writeable and not result.flags.writeable:
         result.flags.writeable = True
@@ -141,7 +148,7 @@ def _broadcast_shape(*args):
     supplied arrays against each other.
     """
     if not args:
-        raise ValueError('must provide at least one argument')
+        raise ValueError("must provide at least one argument")
     # use the old-iterator because np.nditer does not handle size 0 arrays
     # consistently
     b = np.broadcast(*args[:32])
@@ -151,7 +158,7 @@ def _broadcast_shape(*args):
         # objects (it treats them as scalars)
         # use broadcasting to avoid allocating the full array
         b = broadcast_to(0, b.shape)
-        b = np.broadcast(b, *args[pos:(pos + 31)])
+        b = np.broadcast(b, *args[pos : (pos + 31)])
     return b.shape
 
 
@@ -196,10 +203,12 @@ def broadcast_arrays(*args, **kwargs):
     # return np.nditer(args, flags=['multi_index', 'zerosize_ok'],
     #                  order='C').itviews
 
-    subok = kwargs.pop('subok', False)
+    subok = kwargs.pop("subok", False)
     if kwargs:
-        raise TypeError('broadcast_arrays() got an unexpected keyword '
-                        'argument {}'.format(kwargs.pop()))
+        raise TypeError(
+            "broadcast_arrays() got an unexpected keyword "
+            "argument {}".format(kwargs.pop())
+        )
     args = [np.array(_m, copy=False, subok=subok) for _m in args]
 
     shape = _broadcast_shape(*args)
@@ -210,5 +219,4 @@ def broadcast_arrays(*args, **kwargs):
 
     # TODO: consider making the results of broadcast_arrays readonly to match
     # broadcast_to. This will require a deprecation cycle.
-    return [_broadcast_to(array, shape, subok=subok, readonly=False)
-            for array in args]
+    return [_broadcast_to(array, shape, subok=subok, readonly=False) for array in args]
