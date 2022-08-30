@@ -28,6 +28,7 @@ from copy import deepcopy
 import operator
 from itertools import chain, islice
 from collections import Counter, OrderedDict
+from typing import Hashable, Union, Any, Callable, Iterable, Sequence, Hashable
 
 _DICT_IS_ORDERED = tuple(sys.version_info) >= (3, 6)
 
@@ -36,7 +37,7 @@ _DICT_IS_ORDERED = tuple(sys.version_info) >= (3, 6)
 #################################
 
 
-def totuple(a, break_strings=True):
+def totuple(a: Any, break_strings: bool = True) -> Union[tuple, bytes, str]:
     """Makes tuples out of nested datastructures like lists and arrays.
     Modified version of algorithm by Bi Rico:
     http://stackoverflow.com/questions/10016352/convert-numpy-array-to-tuple
@@ -59,13 +60,13 @@ def totuple(a, break_strings=True):
         return a
 
 
-def makeTuple(a, break_strings=True):
+def makeTuple(a: Any, break_strings: bool = True) -> tuple:
     """Like totuple, but ensures that you get a tuple out."""
     retVal = totuple(a, break_strings)
     return retVal if retVal.__class__ == tuple else (retVal,)
 
 
-def tolist(a, break_strings=True):
+def tolist(a: Any, break_strings: bool = True) -> Union[list, bytes, str]:
     """Makes lists out of nested datastructures like tuples, lists, and arrays.
     Based on totuple, see docs for more information."""
     if isinstance(a, (bytes, str)) and (len(a) == 1 or not break_strings):
@@ -76,7 +77,7 @@ def tolist(a, break_strings=True):
         return a
 
 
-def iterToX(f, iterable, break_strings=True):
+def iterToX(f: Callable, iterable: Iterable, break_strings: bool = True) -> Any:
     """Generalized version of tolist/totuple.
     Replace all iterables in a nested structure with another type (X) using
     the constructor function "f".
@@ -89,7 +90,7 @@ def iterToX(f, iterable, break_strings=True):
         return iterable
 
 
-def iterToX_splat(f, iterable, break_strings=True):
+def iterToX_splat(f: Callable, iterable: Iterable, break_strings: bool = True) -> Any:
     """Generalized version of tolist/totuple.
     Replace all iterables in a nested structure with another type using
     the constructor function "f" that takes multiple arguments.
@@ -102,7 +103,7 @@ def iterToX_splat(f, iterable, break_strings=True):
         return iterable
 
 
-def listify(x):
+def listify(x: Any) -> list:
     """A simple function to wrap non-lists in []'s
     Helps in the case when arguments can optionally
     be lists or singletons.
@@ -111,7 +112,7 @@ def listify(x):
     return x if isinstance(x, list) else list(x) if isinstance(x, tuple) else [x]
 
 
-def coerce_to_target_length(x, target_length):
+def coerce_to_target_length(x: Any, target_length: int) -> Any:
     """Coerce singleton values and one-element lists to the target length,
     otherwise test that len(x) == target_length and throw an error otherwise"""
     if not hasattr(x, "__len__"):
@@ -126,8 +127,8 @@ def coerce_to_target_length(x, target_length):
 ## List testing ##
 ##################
 
-
-def find_first_occurrence_in_list(l):
+# TODO: FIXME: This is broken, depends on numpy, huh??
+def find_first_occurrence_in_list(l: Iterable) -> Any:
     """Find the first occurrence (index) of each unique element in l.
     Modified version of code found here:
     http://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-in-python-whilst-preserving-order
@@ -145,12 +146,12 @@ def find_first_occurrence_in_list(l):
     )
 
 
-def has_duplicates(l):
+def has_duplicates(l: Sequence) -> bool:
     """For a 1D list, test whether there are any duplicated elements."""
     return len(l) > len(set(l))
 
 
-def getMostCommonVal(l):
+def getMostCommonVal(l: Iterable[Hashable]) -> Hashable:
     """Get the most-occuring value in a list.
     When multiple values occur the same number of times, returns the minimum one
     Example:
@@ -158,13 +159,13 @@ def getMostCommonVal(l):
     return Counter(l).most_common()[0][0]
 
 
-def iter_to_list(l):
+def iter_to_list(l: Iterable) -> Sequence:
     """Convert any iterable without a length to a list
     Otherwise pass it though unchanged (list, tuple, array, etc)"""
     return l if hasattr(l, "__len__") else list(l)
 
 
-def all_equal(l, equality_function=operator.eq):
+def all_equal(l: Iterable, equality_function: Callable = operator.eq) -> bool:
     """Test if all elements in a list are the same"""
     l = iter_to_list(l)
     if len(l) < 2:
@@ -175,8 +176,10 @@ def all_equal(l, equality_function=operator.eq):
 
 
 def assertSameAndCondense(
-    l, message="List values differ!", equality_function=operator.eq
-):
+    l: Iterable,
+    message: str = "List values differ!",
+    equality_function: Callable = operator.eq,
+) -> Any:
     """Take a list of values that should all be the same, assert that this is true,
     and then return the common value
     This acts as a safe funnel in exploratory data processing,
